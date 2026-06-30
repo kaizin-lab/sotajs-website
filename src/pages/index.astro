@@ -16,13 +16,19 @@ const UserId = createBrandedId({
   brand: 'UserId',
   schema: z.string().uuid(),
 });
+type UserId = ReturnType<typeof UserId.create>;
+
 const ProductId = createBrandedId({
   brand: 'ProductId',
   schema: z.string().uuid(),
 });
+type ProductId = ReturnType<typeof ProductId.create>;
 
-assignToUser(productId); // TypeScript error
-getProduct(userId);      // TypeScript error`;
+function assignToUser(id: UserId) {}
+function getProduct(id: ProductId) {}
+
+assignToUser(productIdInstance); // TypeScript error
+getProduct(userIdInstance);      // TypeScript error`;
 
 const encapsWithout = `class User {
   constructor(public bio: string) {}
@@ -45,8 +51,10 @@ const encapsWith = `const User = createEntity({
 });
 
 user.actions.updateBio('new bio');  // ✓
-user.props.bio = 'x'; // TypeError!
-user.props.items.push(...);     // TypeError!`;
+user.props.bio = 'x'; // TypeError: frozen
+// Every mutation goes through
+// a named, typed action — one path,
+// grepable, auditable.`;
 
 const manualClass = `class User {
   private bio: string;
@@ -79,7 +87,13 @@ const manualClass = `class User {
   // They write: interface User {}
 }`;
 
-const configEntity = `const User = createEntity({
+const configEntity = `const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+});
+
+const User = createEntity({
   schema: UserSchema,
   actions: {
     updateBio(state, bio) {
@@ -101,37 +115,49 @@ const configEntity = `const User = createEntity({
 // type inference — automatic`;
 
 const invariantsWithout = `// OrderService.ts
-async addItem(orderId, item) {
+async confirmOrder(orderId) {
   const order = await db.orders.find(orderId);
-  // Did we check invariants? Maybe.
+  // Did we check status? Maybe.
   // Is this check in every service
-  // that mutates Order? Probably not.
-  order.items.push(item);
+  // that touches Order? Probably not.
+  order.status = 'confirmed';
+  await db.orders.save(order);
 }
 
-// CheckoutService.ts — different file
-// Same invariant? Different?
-// Six months: total ≠ sum(items)`;
+// RefundService.ts — different file
+async processRefund(orderId) {
+  const order = await db.orders.find(orderId);
+  // Can we refund a pending order?
+  // Same check? Different check?
+  // Six months: who knows.
+}`;
 
 const invariantsWith = `const Order = createAggregate({
+  name: 'Order',
   schema: OrderSchema,
   invariants: [
     (props) => {
-      if (props.items.length === 0)
+      if (props.status === 'confirmed'
+        && props.amountPaid === 0)
         throw new Error(
-          'Must have ≥ 1 item'
+          'Cannot confirm unpaid order'
         );
     },
   ],
   actions: {
-    addItem(state, item) {
-      state.items.push(item);
+    confirm(state) {
+      state.status = 'confirmed';
     },
   },
 });
+
 // Invariants run on .create()
-// AND after every action.
-// Cannot forget. Cannot skip.`;
+Order.create({ status: 'confirmed', amountPaid: 0 });
+// Error: Cannot confirm unpaid order
+
+// AND after every action
+order.actions.confirm();
+// Error: Cannot confirm unpaid order`;
 
 const fullEntity = `import { z } from 'zod';
 import { createEntity } from '@sotajs/ddd';
@@ -184,7 +210,6 @@ export const updateProfile = async (
   };
 };`;
 
-const pushEscape = `user.props.items.push(...);`;
 ---
 
 <BaseLayout title="sotajs/ddd" description="Tactical DDD for Node.js / TypeScript — four functions, zero lock-in.">
