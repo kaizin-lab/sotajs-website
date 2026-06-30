@@ -4,8 +4,8 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
-  site: "https://kaizin-lab.github.io",
-  base: "/sotajs-website/",
+  site: "https://sotajs.kaizin.pro",
+  base: "/",
   integrations: [mdx(), sitemap()],
   vite: { plugins: [tailwindcss()] },
 });
