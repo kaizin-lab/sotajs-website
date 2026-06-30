@@ -1,7 +1,139 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const entityCode = `import { z } from 'zod';
+const brandedIdWithout = `type UserId = string;
+type ProductId = string;
+
+function assignToUser(id: UserId) { ... }
+function getProduct(id: ProductId) { ... }
+
+assignToUser(productId); // compiles. runtime bug.
+getProduct(userId);      // compiles. another bug.`;
+
+const brandedIdWith = `import { createBrandedId } from '@sotajs/ddd';
+
+const UserId = createBrandedId({
+  brand: 'UserId',
+  schema: z.string().uuid(),
+});
+const ProductId = createBrandedId({
+  brand: 'ProductId',
+  schema: z.string().uuid(),
+});
+
+assignToUser(productId); // TypeScript error
+getProduct(userId);      // TypeScript error`;
+
+const encapsWithout = `class User {
+  constructor(public bio: string) {}
+}
+const user = new User('hello');
+
+user.bio = 'anything'; // direct mutation
+
+// ORM saves it. Invariant check? Skipped.
+// JSON.stringify(user) — full access.
+// Six months later: who changed this?`;
+
+const encapsWith = `const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    updateBio(state, bio) {
+      state.bio = bio;
+    },
+  },
+});
+
+user.actions.updateBio('new bio');  // ✓
+user.props.bio = 'x'; // TypeError!
+user.props.items.push(...);     // TypeError!`;
+
+const manualClass = `class User {
+  private bio: string;
+  private username: string;
+
+  constructor(props: UserProps) {
+    this.bio  = props.bio;
+    this.username = props.username;
+  }
+
+  updateBio(bio: string) {
+    if (bio.length > 500)
+      throw new Error("Too long");
+    this.bio = bio;
+  }
+  updateUsername(name: string) {
+    if (!name) throw new Error();
+    this.username = name;
+  }
+  setBio(v) { this.bio = v; }
+  setUsername(v) { this.username = v; }
+  get props() {
+    return Object.freeze({...this});
+  }
+  equals(o) {
+    return this.id === o.id;
+  }
+  // ×20 entities = 900 lines
+  // Nobody writes this.
+  // They write: interface User {}
+}`;
+
+const configEntity = `const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    updateBio(state, bio) {
+      state.bio = bio;
+    },
+    updateUsername(state, n) {
+      state.username = n;
+    },
+  },
+  computed: {
+    displayName(props) {
+      return props.username;
+    },
+  },
+});
+// deepFreeze — automatic
+// equals() — automatic
+// auto-setters — automatic
+// type inference — automatic`;
+
+const invariantsWithout = `// OrderService.ts
+async addItem(orderId, item) {
+  const order = await db.orders.find(orderId);
+  // Did we check invariants? Maybe.
+  // Is this check in every service
+  // that mutates Order? Probably not.
+  order.items.push(item);
+}
+
+// CheckoutService.ts — different file
+// Same invariant? Different?
+// Six months: total ≠ sum(items)`;
+
+const invariantsWith = `const Order = createAggregate({
+  schema: OrderSchema,
+  invariants: [
+    (props) => {
+      if (props.items.length === 0)
+        throw new Error(
+          'Must have ≥ 1 item'
+        );
+    },
+  ],
+  actions: {
+    addItem(state, item) {
+      state.items.push(item);
+    },
+  },
+});
+// Invariants run on .create()
+// AND after every action.
+// Cannot forget. Cannot skip.`;
+
+const fullEntity = `import { z } from 'zod';
 import { createEntity } from '@sotajs/ddd';
 
 const UserProfileSchema = z.object({
@@ -9,36 +141,39 @@ const UserProfileSchema = z.object({
   username: z.string(),
   bio: z.string().optional(),
 });
-type UserProfileProps = z.infer<typeof UserProfileSchema>;
+type UserProfileProps =
+  z.infer<typeof UserProfileSchema>;
 
 export const UserProfile = createEntity({
   schema: UserProfileSchema,
   actions: {
-    updateUsername: (state, newUsername: string) => {
-      state.username = newUsername;
+    updateUsername(state, name) {
+      state.username = name;
     },
-    updateBio: (state, bio: string) => {
+    updateBio(state, bio) {
       state.bio = bio;
     },
   },
   computed: {
-    displayName: (props) => props.username,
+    displayName(props) {
+      return props.username;
+    },
   },
 });
-export type UserProfile = ReturnType<typeof UserProfile.create>;`;
+export type UserProfile =
+  ReturnType<typeof UserProfile.create>;`;
 
-const usageCode = `// Create from API input — schema validates + infers types
+const useCase = `// Schema validates on create
 const profile = UserProfile.create({
   id: 'b3f1ae2c-abcd',
   username: 'alice',
 });
 
-// Use in a command
-export const updateProfileCommand = async (
-  userId: string,
-  bio: string,
+export const updateProfile = async (
+  userId: string, bio: string,
 ) => {
-  const profile = await profiles.findById(userId);
+  const profile = await profiles
+    .findById(userId);
 
   profile.actions.updateBio(bio);
   await profiles.save(profile);
@@ -48,199 +183,254 @@ export const updateProfileCommand = async (
     displayName: profile.displayName,
   };
 };`;
+
+const pushEscape = `user.props.items.push(...);`;
 ---
 
-<BaseLayout title="sotajs/ddd" description="DDD without the dogma. Describe your domain, get a typed entity.">
+<BaseLayout title="sotajs/ddd" description="Tactical DDD for Node.js / TypeScript — four functions, zero lock-in.">
 
-<!-- ── HERO ──────────────────────────────────────────────── -->
-<section class="max-w-[960px] mx-auto px-6 pt-24 pb-16 sm:pt-32 sm:pb-24">
-  <div class="space-y-6 max-w-2xl">
-    <p class="text-accent font-mono text-xs tracking-[0.15em] uppercase">Domain modeling library</p>
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
-      You think DDD is hard.<br/>
-      <span class="text-accent">It's no harder than your domain.</span>
-    </h1>
-    <p class="text-lg sm:text-xl text-text-secondary leading-relaxed max-w-lg">
-      You already describe your data with Zod schemas.
-      <code>@sotajs/ddd</code> takes the same schema and gives you
-      an entity with typed actions, computed properties, and identity —
-      no DDD book required.
-    </p>
-    <div class="flex flex-wrap gap-3 pt-2">
-      <a href="/docs/getting-started/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-bg-root font-semibold rounded-md text-sm hover:brightness-110 transition-all">
-        Get Started
-        <span class="font-mono">&rarr;</span>
-      </a>
-      <a href="https://github.com/kaizin-lab/sotajs-ddd" class="inline-flex items-center gap-2 px-5 py-2.5 border border-border-default text-text-primary font-medium rounded-md text-sm hover:border-text-muted transition-all">
-        GitHub
-      </a>
+<style>
+  h1 { font-size: 2.8rem; font-weight: 700; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 16px; }
+  h2 { font-size: 1.45rem; font-weight: 600; margin-bottom: 12px; }
+  .sub { color: var(--color-text-secondary); font-size: 1.05rem; line-height: 1.65; max-width: 600px; }
+  .label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--color-text-muted); margin-bottom: 12px; }
+  .row { display: flex; gap: 48px; align-items: flex-start; }
+  .col { flex: 1; min-width: 0; }
+
+  .chrome { border: 1px solid var(--color-border-default); border-radius: 8px; overflow: hidden; background: var(--color-bg-code); }
+  .chrome-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--color-border-muted); background: var(--color-bg-surface); }
+  .chrome-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .chrome-dot.r { background: var(--color-red); opacity: 0.6; }
+  .chrome-dot.y { background: var(--color-amber); opacity: 0.6; }
+  .chrome-dot.g { background: var(--color-green); opacity: 0.6; }
+  .chrome-fname { margin-left: 8px; font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono); }
+  .chrome pre { border: none; border-radius: 0; margin: 0; }
+
+  .gap-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+  .gap-num { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-accent); min-width: 28px; }
+  .gap-problem { font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-red); background: rgba(248,81,73,0.08); padding: 2px 8px; border-radius: 3px; margin-bottom: 12px; display: inline-block; }
+
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .contrast-col { position: relative; }
+  .contrast-label { position: absolute; top: -28px; right: 0; font-family: var(--font-mono); font-size: 0.65rem; padding: 2px 8px; border-radius: 3px; }
+  .contrast-label.bad { background: rgba(248,81,73,0.15); color: var(--color-red); }
+  .contrast-label.good { background: rgba(34,211,238,0.12); color: var(--color-accent); }
+
+  .result { display: flex; gap: 32px; margin-top: 24px; }
+  .result-item { flex: 1; background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 6px; padding: 16px; }
+  .result-item h4 { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; }
+  .result-item p { color: var(--color-text-secondary); font-size: 0.82rem; line-height: 1.5; }
+
+  .cta-block { text-align: center; padding: 100px 0 80px; }
+  .cta-block pre { display: inline-block; text-align: left; margin-bottom: 16px; }
+  .small-label { font-size: 0.7rem; color: var(--color-text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+
+  @media (max-width: 768px) {
+    h1 { font-size: 1.7rem; }
+    .row, .result { flex-direction: column; gap: 24px; }
+    .contrast { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 pt-24 pb-16 sm:pt-32 sm:pb-18">
+  <p class="label">@sotajs/ddd</p>
+  <h1>Tactical DDD was designed for<br/>a runtime <span style="color: var(--color-accent);">Node doesn't provide</span></h1>
+  <p class="sub">
+    Nominal typing, real encapsulation, rich domain models — DDD patterns assume a Java/C# runtime.
+    In Node you pay for every invariant with manual infrastructure. Most teams cut corners,
+    keeping the vocabulary and losing the guarantees.
+  </p>
+  <p class="sub" style="margin-top: 12px; color: var(--color-accent); font-weight: 500;">
+    Four functions. Zero lock-in. DDD without the infrastructure tax.
+  </p>
+</section>
+
+<!-- ═══════════ GAP 1: BRANDED ID ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <div class="gap-header">
+    <span class="gap-num">01</span>
+    <h2>Structural typing: <span style="font-weight: 400;">two strings, same type</span></h2>
+  </div>
+  <span class="gap-problem">TS lets you pass a UserId where a ProductId is expected</span>
+
+  <div class="row" style="margin-top: 20px;">
+    <div class="col">
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{brandedIdWithout}</code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{brandedIdWith}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>Compile-time safety</h4>
+      <p><code>UserId</code> and <code>ProductId</code> are distinct types. The compiler catches swaps before they reach production.</p>
+    </div>
+    <div class="result-item">
+      <h4>Validation on creation</h4>
+      <p>Schema validates the raw string on <code>.create()</code>. UUID format enforced, no silent garbage.</p>
+    </div>
+    <div class="result-item">
+      <h4>JSON-safe</h4>
+      <p><code>.toJSON()</code> and <code>.toString()</code> built in. Serializes to plain string, deserializes through <code>.create()</code>.</p>
     </div>
   </div>
 </section>
 
-<!-- ── THESIS: THE MODEL IS YOUR SCHEMA ──────────────────── -->
-<section class="border-y border-border-muted bg-bg-surface/50">
-  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
-    <div class="max-w-lg mb-8">
-      <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3">The idea</p>
-      <h2 class="text-2xl font-semibold mb-3">Your Zod schema <span class="text-accent">is</span> your domain model</h2>
-      <p class="text-text-secondary leading-relaxed">
-        No new DSL. No decorators. No annotations. The same schema you use for
-        API validation defines your entity's shape, types, and runtime contract.
-        <code>z.infer</code> gives you the props type. <code>ReturnType</code> gives you
-        the entity instance type. Zero drift between validation and domain code.
-      </p>
-    </div>
+<!-- ═══════════ GAP 2: ENCAPSULATION ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <div class="gap-header">
+    <span class="gap-num">02</span>
+    <h2>Encapsulation: <span style="font-weight: 400;">no true privacy in JS</span></h2>
+  </div>
+  <span class="gap-problem">Private fields exist but serialization strips them. ORMs write past every guard.</span>
 
-    <div class="bg-bg-code border border-border-default rounded-lg overflow-hidden">
-      <div class="flex items-center gap-2 px-4 py-2.5 border-b border-border-muted bg-bg-surface">
-        <span class="w-3 h-3 rounded-full bg-red/60"></span>
-        <span class="w-3 h-3 rounded-full bg-amber/60"></span>
-        <span class="w-3 h-3 rounded-full bg-green/60"></span>
-        <span class="ml-3 text-xs text-text-muted font-mono">user-profile.entity.ts</span>
+  <div class="row" style="margin-top: 20px;">
+    <div class="col">
+      <div class="chrome" style="margin-bottom: 16px;">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{encapsWithout}</code></pre>
       </div>
-      <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm language-typescript"><code>{entityCode}</code></pre>
+    </div>
+    <div class="col">
+      <div class="chrome" style="margin-bottom: 16px;">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{encapsWith}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>WeakMap state storage</h4>
+      <p>State lives outside <code>this</code>. No public fields. No accidental exposure through iteration or logging.</p>
+    </div>
+    <div class="result-item">
+      <h4>deepFreeze on every read</h4>
+      <p><code>.props</code> returns a frozen snapshot. Mutation throws TypeError. Not a convention — a physical constraint.</p>
+    </div>
+    <div class="result-item">
+      <h4>Actions — single path</h4>
+      <p>Every state change has a name, a typed signature, and a single location. Grep <code>actions.updateBio</code> → you found every call site.</p>
     </div>
   </div>
 </section>
 
-<!-- ── ANATOMY ───────────────────────────────────────────── -->
-<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
-  <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3">Engineering tour</p>
-  <h2 class="text-2xl font-semibold mb-10">What <code class="text-[1.05em]">createEntity</code> actually gives you</h2>
+<!-- ═══════════ GAP 3: COST ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <div class="gap-header">
+    <span class="gap-num">03</span>
+    <h2>The cost gap: <span style="font-weight: 400;">rich model = 900 lines of boilerplate</span></h2>
+  </div>
+  <span class="gap-problem">Manual DDD is correct but nobody writes it. Anemic models win not by merit but by price.</span>
 
-  <div class="grid sm:grid-cols-2 gap-x-10 gap-y-8">
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">01</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Actions — the only path to mutation</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        <code>entity.props</code> returns a frozen snapshot. You cannot do
-        <code>entity.props.username = "x"</code>. State changes only through
-        explicitly defined actions. Every mutation has a name, a typed signature,
-        and a single place to find it.
-      </p>
+  <div class="contrast" style="margin-top: 20px;">
+    <div class="contrast-col">
+      <span class="contrast-label bad">Manual — 45 lines per entity, never written</span>
+      <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{manualClass}</code></pre>
     </div>
-
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">02</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Computed — derived state as a property</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        <code>profile.displayName</code> is a property, not a function call.
-        Defined once in config, reads like native data, derives from current state.
-        No caching to manage, no recalculation to trigger.
-      </p>
-    </div>
-
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">03</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Auto-setters for every schema field</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        Every field in your schema (except <code>id</code>) gets a
-        <code>setField(value)</code> method. No code generation step —
-        the library introspects your Zod schema's <code>.shape</code> at definition time
-        and builds setters automatically.
-      </p>
-    </div>
-
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">04</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Identity — equality by id</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        <code>entity.equals(other)</code> compares by <code>id</code>, not object
-        reference. Two instances loaded from different queries — same id, same entity.
-        Critical for collections, deduplication, and caching.
-      </p>
-    </div>
-
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">05</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Validator-agnostic</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        <code>schema</code> accepts Zod or Valibot (<code>.parse()</code> interface).
-        <code>type</code> accepts ArkType (fastest validation path).
-        <code>validate</code> accepts any <code>(data: unknown) =&gt; T</code> function.
-        The library doesn't care.
-      </p>
-    </div>
-
-    <div>
-      <p class="text-accent font-mono text-xs mb-1.5">06</p>
-      <h3 class="text-base font-semibold text-text-primary mb-1.5 !mt-0">Zero dependencies, ~100 lines of logic</h3>
-      <p class="text-text-secondary text-sm leading-relaxed">
-        State in a <code>WeakMap</code> (no <code>this</code> pollution).
-        Immutability via <code>deepFreeze</code>. Actions via shallow copy.
-        No Immer, no DI container, no ORM. The entire entity module fits in a single file.
-      </p>
+    <div class="contrast-col">
+      <span class="contrast-label good">@sotajs/ddd — 3 fields of config</span>
+      <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{configEntity}</code></pre>
     </div>
   </div>
 </section>
 
-<!-- ── USAGE ──────────────────────────────────────────────── -->
-<section class="border-y border-border-muted bg-bg-surface/50">
-  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
-    <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3">DX</p>
-    <h2 class="text-2xl font-semibold mb-3">From declaration to use case</h2>
-    <p class="text-text-secondary mb-8 max-w-lg leading-relaxed">
-      The entity you declared is now a typed object you use in commands and queries.
-      <code>create()</code> validates input. <code>actions</code> mutate through
-      defined paths. <code>props</code> and computed properties give you a read
-      surface. No surprises.
-    </p>
+<!-- ═══════════ GAP 4: INVARIANTS ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <div class="gap-header">
+    <span class="gap-num">04</span>
+    <h2>Culture: <span style="font-weight: 400;">invariants are optional by default</span></h2>
+  </div>
+  <span class="gap-problem">Node ecosystem thinks in data transformations. Invariants live in if-statements scattered across services.</span>
 
-    <div class="bg-bg-code border border-border-default rounded-lg overflow-hidden">
-      <div class="flex items-center gap-2 px-4 py-2.5 border-b border-border-muted bg-bg-surface">
-        <span class="w-3 h-3 rounded-full bg-red/60"></span>
-        <span class="w-3 h-3 rounded-full bg-amber/60"></span>
-        <span class="w-3 h-3 rounded-full bg-green/60"></span>
-        <span class="ml-3 text-xs text-text-muted font-mono">update-profile.command.ts</span>
+  <div class="row" style="margin-top: 20px;">
+    <div class="col">
+      <div class="chrome" style="margin-bottom: 16px;">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library — invariants are optional</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{invariantsWithout}</code></pre>
       </div>
-      <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm language-typescript"><code>{usageCode}</code></pre>
     </div>
+    <div class="col">
+      <div class="chrome" style="margin-bottom: 16px;">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd — required</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{invariantsWith}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>Required by TypeScript</h4>
+      <p><code>invariants</code> is not optional on <code>createAggregate</code>. The config won't compile without it. You cannot accidentally ship an aggregate with no rules.</p>
+    </div>
+    <div class="result-item">
+      <h4>Checked on every action</h4>
+      <p>Invariants run at <code>.create()</code> and after every action. You don't "remember to call validate." The library does it.</p>
+    </div>
+    <div class="result-item">
+      <h4>Single source of truth</h4>
+      <p>Change one business rule → change it in one place. Every action and every create picks it up automatically.</p>
+    </div>
+  </div>
+</section>
 
-    <div class="grid sm:grid-cols-3 gap-4 mt-8 text-sm">
-      <div class="bg-bg-overlay/50 border border-border-muted rounded-md p-4">
-        <p class="font-semibold text-text-primary mb-1">Typed at every boundary</p>
-        <p class="text-text-secondary">
-          <code>create()</code> params are typed from schema.
-          <code>props</code> fields are typed.
-          <code>actions</code> are typed.
-          No <code>any</code> anywhere in the call chain.
-        </p>
+<!-- ═══════════ FULL EXAMPLE ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <p class="label">The whole picture</p>
+  <h2>One entity. From declaration to use case.</h2>
+  <p class="sub" style="margin-bottom: 28px;">
+    Your Zod schema. Your actions. Your computed properties. The library handles the rest.
+  </p>
+
+  <div class="row">
+    <div class="col">
+      <div class="small-label">Declaration</div>
+      <div class="chrome" style="margin-bottom: 20px;">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">user-profile.entity.ts</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{fullEntity}</code></pre>
       </div>
-      <div class="bg-bg-overlay/50 border border-border-muted rounded-md p-4">
-        <p class="font-semibold text-text-primary mb-1">No framework lock-in</p>
-        <p class="text-text-secondary">
-          Your entities are plain classes. Use them in Express, Fastify, Lambda,
-          or a unit test. The library doesn't own your architecture.
-        </p>
-      </div>
-      <div class="bg-bg-overlay/50 border border-border-muted rounded-md p-4">
-        <p class="font-semibold text-text-primary mb-1">Trivial to test</p>
-        <p class="text-text-secondary">
-          <code>UserProfile.create({'{...}'})</code> and call <code>actions</code>.
-          No DI to mock, no database to spin up. Assert on <code>props</code>.
-        </p>
+    </div>
+    <div class="col">
+      <div class="small-label">Usage in a command</div>
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">update-profile.command.ts</span></div>
+        <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm"><code>{useCase}</code></pre>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── INSTALL ────────────────────────────────────────────── -->
-<section class="border-t border-border-muted">
-  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 text-center">
-    <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-6">
-      You know your domain. The library handles the rest.
-    </p>
-    <div class="inline-block bg-bg-code border border-border-default rounded-md px-5 py-3 font-mono text-sm mb-4">
-      npm install @sotajs/ddd
+<!-- ═══════════ OBJECTIONS ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <p class="label">Your stack</p>
+  <h2>Four functions. Not a framework.</h2>
+  <div class="result" style="margin-top: 20px;">
+    <div class="result-item">
+      <h4>Works inside NestJS — or anything</h4>
+      <p>Your controllers, DI, and modules stay as they are. No decorators, no base classes, no new DI system.</p>
     </div>
-    <div class="text-text-muted text-sm space-x-4">
-      <span>TypeScript ^5.0</span>
-      <span>&middot;</span>
-      <span>Zero dependencies</span>
-      <span>&middot;</span>
-      <a href="/docs/getting-started/" class="text-accent hover:underline">Read the docs &rarr;</a>
+    <div class="result-item">
+      <h4>One module at a time</h4>
+      <p>Replace <code>interface Order</code> with <code>createAggregate</code> in one service. The app doesn't notice. Try on Friday.</p>
     </div>
+    <div class="result-item">
+      <h4>No new vocabulary</h4>
+      <p>You already write Zod schemas for DTOs. Actions are functions. Computed are getters. The library removes the boilerplate between them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted">
+  <div class="cta-block">
+    <pre class="inline-block bg-bg-code border border-border-default rounded-md px-5 py-3 font-mono text-sm mb-4"><code>npm install @sotajs/ddd</code></pre>
+    <p class="text-text-muted text-sm">TypeScript ^5.0 · Zero dependencies · Works with Zod, ArkType, Valibot · <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-accent hover:underline">GitHub</a></p>
   </div>
 </section>
 
