@@ -1,0 +1,45 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} — sotajs/ddd</title>
+  {description && <meta name="description" content={description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href={`${Astro.site?.toString() ?? "/"}favicon.svg`} />
+</head>
+<body class="min-h-screen flex flex-col">
+  <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md">
+    <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6">
+      <a href={Astro.site?.toString() ?? "/"} class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors">
+        <span class="text-accent font-mono text-lg">◇</span>
+        <span class="tracking-tight">sotajs/ddd</span>
+      </a>
+      <div class="flex items-center gap-6 text-sm">
+        <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a>
+        <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a>
+        <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </nav>
+  <main class="flex-1 pt-14">
+    <slot />
+  </main>
+  <footer class="border-t border-border-muted py-8 mt-16">
+    <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2">
+      <span>sotajs/ddd — domain enforcement for TypeScript</span>
+      <span>MIT License</span>
+    </div>
+  </footer>
+</body>
+</html>

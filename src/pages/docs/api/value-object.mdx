@@ -1,0 +1,113 @@
+---
+title: "Value Object"
+description: "createValueObject — structural equality, immutable props, computed values"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## `createValueObject(config)`
+
+Creates a **Value Object** class — objects defined by their attributes,
+not by identity. Two Value Objects with identical props are equal.
+
+### Signature
+
+```ts
+function createValueObject<
+  TProps,
+  TActions extends Record<string, (state: TProps, ...args: any[]) => void> = {},
+  TComputed extends Record<string, (state: TProps) => any> = {},
+>(config: ValueObjectConfig<TProps, TActions, TComputed>): ValueObjectClass
+```
+
+### Config
+
+| Property | Type | Description |
+|---|---|---|
+| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
+| `actions` | `Record<string, (draft, ...args) => void>` | Optional. Domain actions that produce a new state. |
+| `computed` | `Record<string, (props) => any>` | Derived getters. |
+
+### Returned Class
+
+| Member | Type | Description |
+|---|---|---|
+| `VO.create(data)` | `ValueObject` | Static factory. Validates input. |
+| `vo.props` | `Readonly<TProps>` | Frozen snapshot of current state. |
+| `vo.actions.*` | `(...args) => void` | Action methods (if configured). |
+| `vo.equals(other)` | `boolean` | Structural equality — compares JSON of props. |
+
+### Example
+
+```ts
+import { createValueObject } from "@sotajs/ddd";
+
+const Money = createValueObject({
+  validate: (data) => {
+    const d = data as Record<string, unknown>;
+    if (typeof d.amount !== "number") throw new Error("amount must be number");
+    if (d.amount < 0) throw new Error("amount must be ≥ 0");
+    return { amount: d.amount, currency: d.currency as string };
+  },
+
+  actions: {
+    add: (draft, other: { amount: number; currency: string }) => {
+      if (draft.currency !== other.currency) throw new Error("Currency mismatch");
+      draft.amount += other.amount;
+    },
+  },
+
+  computed: {
+    formatted: (state) => `${state.amount} ${state.currency}`,
+  },
+});
+
+const a = Money.create({ amount: 100, currency: "USD" });
+const b = Money.create({ amount: 100, currency: "USD" });
+const c = Money.create({ amount: 200, currency: "USD" });
+
+console.log(a.equals(b)); // true  — same attributes
+console.log(a.equals(c)); // false — different amount
+
+a.actions.add({ amount: 50, currency: "USD" });
+console.log(a.props.amount);  // 150
+console.log(a.formatted);     // "150 USD"
+
+// Currency mismatch throws
+// a.actions.add({ amount: 50, currency: "EUR" });
+```
+
+### Structural Equality
+
+Value Objects use `JSON.stringify` for equality comparison. This means:
+
+- Property order in objects matters
+- `undefined` values are stripped by `JSON.stringify`
+- Functions and Symbols are ignored
+
+For most Value Objects this is sufficient. If you need custom equality logic,
+implement it outside the VO.
+
+### Actions Are Optional
+
+Actions on Value Objects are less common than on Entities. A Value Object
+without actions is perfectly valid:
+
+```ts
+const Point = createValueObject({
+  validate: (data) => {
+    const d = data as Record<string, unknown>;
+    return { x: d.x as number, y: d.y as number };
+  },
+});
+
+const p = Point.create({ x: 1, y: 2 });
+// p.actions is an empty object
+```
+
+### Pitfalls
+
+- **Equality uses JSON.** If your Value Object contains `Date`, `BigInt`,
+  or circular references, `equals()` will behave unexpectedly.
+- **No identity.** Value Objects don't have an `id` — they are their attributes.
+- **Immutability.** Props are frozen. To "change" a VO, produce a new instance
+  or use an action that mutates the internal state.

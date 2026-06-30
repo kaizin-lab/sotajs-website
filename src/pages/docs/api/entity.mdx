@@ -1,0 +1,94 @@
+---
+title: "Entity"
+description: "createEntity — objects with identity, mutable state, and enforced actions"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## `createEntity(config)`
+
+Creates an **Entity** class — the primary DDD building block for objects with
+a distinct identity (`id`) and mutable state that can only be changed through
+defined actions.
+
+### Signature
+
+```ts
+function createEntity<
+  TProps extends { id: string },
+  TActions extends Record<string, (props: TProps, ...args: any[]) => void>,
+  TComputed extends Record<string, (props: TProps) => any> = {},
+>(config: EntityConfig<TProps, TActions, TComputed>): EntityClass
+```
+
+### Config
+
+| Property | Type | Description |
+|---|---|---|
+| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
+| `actions` | `Record<string, (draft: TProps, ...args) => void>` | Domain actions that mutate a mutable draft of props. |
+| `computed` | `Record<string, (props: TProps) => any>` | Derived getters available as properties on the entity. |
+
+### Returned Class
+
+| Member | Type | Description |
+|---|---|---|
+| `Entity.create(data)` | `Entity` | Static factory. Validates input, returns instance. |
+| `entity.id` | `string` | The entity's identity. |
+| `entity.props` | `Readonly<TProps>` | Frozen snapshot of current state. |
+| `entity.state` | `Readonly<TProps>` | **Deprecated.** Use `.props`. |
+| `entity.actions.*` | `(...args) => void` | Action methods. Each mutates state through a shallow copy. |
+| `entity.equals(other)` | `boolean` | Identity comparison by `id`. |
+
+### Auto-setters
+
+For every non-`id` property in the validated shape, an auto-setter is generated
+(`setName`, `setEmail`, etc.) — **if** the validator accepts `{ id: "any" }`.
+Strict validators that require all fields will skip auto-setters.
+
+### Example
+
+```ts
+import { createEntity } from "@sotajs/ddd";
+
+const User = createEntity({
+  validate: (data) => {
+    const d = data as Record<string, unknown>;
+    if (typeof d.id !== "string") throw new Error("id required");
+    return {
+      id: d.id,
+      name: (d.name as string) ?? "Unknown",
+      email: d.email as string | undefined,
+    };
+  },
+
+  actions: {
+    rename: (draft, newName: string) => {
+      draft.name = newName;
+    },
+  },
+
+  computed: {
+    displayName: (props) => `${props.name} <${props.email ?? "no email"}>`,
+  },
+});
+
+const u = User.create({ id: "1", name: "Alice", email: "a@test.com" });
+
+u.actions.rename("Alicia");
+console.log(u.props.name);          // "Alicia"
+console.log(u.displayName);         // "Alicia <a@test.com>" (computed)
+
+// Props are frozen
+// u.props.name = "hack"; // throws TypeError in strict mode
+
+// Identity equality
+const u2 = User.create({ id: "1", name: "Bob" });
+console.log(u.equals(u2));  // true
+```
+
+### Pitfalls
+
+- **Computed values are not cached.** They recalculate on every access.
+- **`validate` must be synchronous.** Async validation is not supported.
+- **Auto-setters skip when validator rejects `{ id: "any" }`.** Define explicit setters in `actions` for strict validators.
+- **State is shallow-copied.** Nested objects (arrays, sub-objects) within props share references with the draft during mutation. Freeze them yourself if you need deep immutability for nested structures.

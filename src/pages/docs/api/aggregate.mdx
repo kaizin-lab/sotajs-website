@@ -1,0 +1,149 @@
+---
+title: "Aggregate"
+description: "createAggregate — transactional boundary with invariants, nested entities, and domain events"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## `createAggregate(config)`
+
+Creates an **Aggregate** class — the transactional consistency boundary in DDD.
+Aggregates enforce invariants on every mutation, hydrate nested entities,
+and collect domain events for later dispatching.
+
+### Signature
+
+```ts
+function createAggregate<
+  TProps extends { id: string },
+  TEntities extends EntitiesMap<TProps>,
+  TActions extends Record<string, (props: HydratedProps<TProps, TEntities>, ...args: any[]) => any>,
+  TComputed extends Record<string, (props: HydratedProps<TProps, TEntities>) => any> = {},
+>(config: AggregateConfig<TProps, TEntities, TActions, TComputed>): AggregateClass
+```
+
+### Config
+
+| Property | Type | Description |
+|---|---|---|
+| `name` | `string` | Human-readable name for debugging. |
+| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
+| `entities` | `Record<string, EntityClass>` | Entity factories to hydrate nested data into entity instances. |
+| `invariants` | `Array<(props) => void>` | Checked on creation and after every action. Throw on violation. |
+| `actions` | `Record<string, (draft, ...args) => any>` | Domain actions. Return `{ event }` to record a domain event. |
+| `computed` | `Record<string, (props) => any>` | Derived getters. |
+
+### Returned Class
+
+| Member | Type | Description |
+|---|---|---|
+| `Aggregate.create(data)` | `Aggregate` | Static factory. Validates, hydrates entities, checks invariants. |
+| `aggregate.id` | `string` | The aggregate root's identity. |
+| `aggregate.props` | `Readonly<TProps>` | Frozen, dehydrated snapshot (entities unwrapped to raw props). |
+| `aggregate.state` | `Readonly<TProps>` | **Deprecated.** Use `.props`. |
+| `aggregate.actions.*` | `(...args) => void` | Action methods. Each runs through invariant checks post-mutation. |
+| `aggregate.getPendingEvents()` | `IDomainEvent[]` | Collects and clears pending domain events. |
+| `aggregate.clearEvents()` | `void` | Discards pending events without reading. |
+
+### Domain Events
+
+Actions can return `{ event }` to record a domain event:
+
+```ts
+actions: {
+  ship: (draft) => {
+    draft.status = "shipped";
+    return { event: { aggregateId: draft.id, timestamp: new Date() } };
+  },
+}
+```
+
+Events are collected internally. Call `getPendingEvents()` after your
+use case to retrieve and clear them. Dispatch them to your message bus,
+event store, or outbox pattern.
+
+### Nested Entities
+
+When an aggregate contains sub-entities (e.g., `Order` contains `OrderItem` entities),
+declare them in the `entities` map:
+
+```ts
+const Order = createAggregate({
+  entities: {
+    items: OrderItemEntity,  // Entity factory
+  },
+  // ...
+});
+```
+
+On creation, nested data matching entity keys is automatically hydrated
+through `Entity.create()`. On `.props` read, entities are dehydrated back
+to raw data.
+
+### Example
+
+```ts
+import { createAggregate } from "@sotajs/ddd";
+
+const Order = createAggregate({
+  name: "Order",
+  validate: (data) => {
+    const d = data as Record<string, unknown>;
+    return {
+      id: d.id as string,
+      customerId: d.customerId as string,
+      items: (d.items as any[]) ?? [],
+      status: "pending" as const,
+    };
+  },
+
+  invariants: [
+    (props) => {
+      if (props.items.length === 0) throw new Error("Must have ≥ 1 item");
+    },
+    (props) => {
+      if (props.items.some((i: any) => i.quantity <= 0))
+        throw new Error("Quantities must be positive");
+    },
+  ],
+
+  actions: {
+    addItem: (draft, item) => {
+      draft.items.push(item);
+    },
+    ship: (draft) => {
+      if (draft.status !== "pending") throw new Error("Already shipped");
+      draft.status = "shipped";
+      return {
+        event: { aggregateId: draft.id, timestamp: new Date() },
+      };
+    },
+  },
+
+  computed: {
+    itemCount: (props) => props.items.length,
+  },
+});
+
+const order = Order.create({
+  id: "o1",
+  customerId: "c1",
+  items: [{ productId: "p1", quantity: 2 }],
+});
+
+order.actions.addItem({ productId: "p2", quantity: 1 });
+order.actions.ship();
+
+// Invariant violation:
+// order.actions.ship(); // throws "Already shipped"
+
+const events = order.getPendingEvents();
+// events.length === 1, events cleared after read
+```
+
+### Pitfalls
+
+- **Invariants run on every action.** Keep them fast — no I/O, no async.
+- **All invariants run after every action**, not just the relevant ones.
+- **`getPendingEvents()` clears the queue.** Call it once per use case.
+- **Props are dehydrated** — nested entities are unwrapped to raw data on `.props` access.
+- **Shallow copies.** Like Entity, mutations use shallow copy. Deeply nested structures need explicit handling.

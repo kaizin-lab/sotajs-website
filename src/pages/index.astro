@@ -1,0 +1,194 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const codeSample = `import { createAggregate } from "@sotajs/ddd";
+import { z } from "zod";
+
+const Order = createAggregate({
+  name: "Order",
+  validate: (data) => z.object({
+    id: z.string(),
+    items: z.array(z.object({ productId: z.string(), qty: z.number() })),
+  }).parse(data),
+
+  invariants: [
+    (props) => { if (props.items.length === 0) throw new Error("Must have ≥ 1 item"); },
+  ],
+
+  actions: {
+    addItem: (draft, item) => { draft.items.push(item); },
+    ship: (draft) => {
+      if (draft.status !== "pending") throw new Error("Already shipped");
+      draft.status = "shipped";
+      return { event: { aggregateId: draft.id, timestamp: new Date() } };
+    },
+  },
+
+  computed: {
+    itemCount: (props) => props.items.length,
+  },
+});`;
+---
+
+<BaseLayout title="sotajs/ddd — Domain Enforcement for TypeScript" description="A zero-dependency domain enforcement layer that prevents architectural decay in TypeScript applications.">
+
+<!-- ── HERO ──────────────────────────────────────────────── -->
+<section class="max-w-[960px] mx-auto px-6 pt-24 pb-16 sm:pt-32 sm:pb-24">
+  <div class="space-y-6 max-w-2xl">
+    <p class="text-accent font-mono text-xs tracking-[0.2em] uppercase">Domain Enforcement Layer</p>
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+      Structure is not<br/>
+      <span class="text-accent">correctness</span>
+    </h1>
+    <p class="text-lg sm:text-xl text-text-secondary leading-relaxed max-w-lg">
+      NestJS gives you structure. We give you domain correctness — 
+      a zero-dependency enforcement layer that prevents business logic 
+      from leaking into infrastructure boundaries.
+    </p>
+    <div class="flex flex-wrap gap-3 pt-2">
+      <a href="/docs/getting-started/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-bg-root font-semibold rounded-md text-sm hover:brightness-110 transition-all">
+        Get Started
+        <span class="font-mono">&rarr;</span>
+      </a>
+      <a href="https://github.com/kaizin-lab/sotajs-ddd" class="inline-flex items-center gap-2 px-5 py-2.5 border border-border-default text-text-primary font-medium rounded-md text-sm hover:border-text-muted transition-all">
+        <span class="font-mono">&darr;</span> GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── GAP STATEMENT ──────────────────────────────────────── -->
+<section class="border-y border-border-muted bg-bg-surface/50">
+  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
+    <div class="grid sm:grid-cols-2 gap-10">
+      <div>
+        <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3">The Problem</p>
+        <h2 class="text-xl font-semibold mb-3 !mt-0">NestJS does not enforce domain boundaries</h2>
+        <p class="text-text-secondary leading-relaxed">
+          NestJS excels at module organization, dependency injection, and application structure.
+          But it does not prevent domain logic from leaking into services and controllers.
+          In large systems this leads to implicit business rules, untestable services,
+          circular dependencies, and architecture drift.
+        </p>
+      </div>
+      <div>
+        <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3">Our Solution</p>
+        <h2 class="text-xl font-semibold mb-3 !mt-0">A domain enforcement layer inside your modules</h2>
+        <p class="text-text-secondary leading-relaxed">
+          <code>@sotajs/ddd</code> introduces Entity, Aggregate, and Value Object as
+          <strong class="text-text-primary">enforced constructs</strong> &mdash; not suggestions.
+          Business rules live in the domain core, guarded by invariants that run on every mutation.
+          Infrastructure concerns stay outside.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CODE DEMO ──────────────────────────────────────────── -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
+  <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3 text-center">In Practice</p>
+  <h2 class="text-2xl font-semibold text-center mb-10">Domain correctness in 30 lines</h2>
+
+  <div class="bg-bg-code border border-border-default rounded-lg overflow-hidden">
+    <div class="flex items-center gap-2 px-4 py-2.5 border-b border-border-muted bg-bg-surface">
+      <span class="w-3 h-3 rounded-full bg-red/60"></span>
+      <span class="w-3 h-3 rounded-full bg-amber/60"></span>
+      <span class="w-3 h-3 rounded-full bg-green/60"></span>
+      <span class="ml-3 text-xs text-text-muted font-mono">order.aggregate.ts</span>
+    </div>
+    <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm language-typescript"><code>{codeSample}</code></pre>
+  </div>
+
+  <div class="grid sm:grid-cols-3 gap-4 mt-8 text-sm">
+    <div class="bg-bg-surface border border-border-muted rounded-md p-4">
+      <p class="font-semibold text-text-primary mb-1">Invariants enforced</p>
+      <p class="text-text-secondary">Checked on creation and after every action. Business rules are not optional.</p>
+    </div>
+    <div class="bg-bg-surface border border-border-muted rounded-md p-4">
+      <p class="font-semibold text-text-primary mb-1">Domain events built-in</p>
+      <p class="text-text-secondary">Actions return events. Collect and dispatch them to your infrastructure layer.</p>
+    </div>
+    <div class="bg-bg-surface border border-border-muted rounded-md p-4">
+      <p class="font-semibold text-text-primary mb-1">Zero dependencies</p>
+      <p class="text-text-secondary">No Zod, no Immer, no DI container. Bring your own validator or write a plain function.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECTURE POSITION ──────────────────────────────── -->
+<section class="border-y border-border-muted bg-bg-surface/50">
+  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
+    <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3 text-center">Architecture</p>
+    <h2 class="text-2xl font-semibold text-center mb-3">Where we fit</h2>
+    <p class="text-text-secondary text-center max-w-lg mx-auto mb-10">
+      NestJS handles the application boundary. We handle domain correctness inside those boundaries.
+    </p>
+
+    <div class="max-w-md mx-auto space-y-1 font-mono text-xs">
+      <div class="flex items-center gap-3 p-3 rounded border border-border-muted bg-bg-overlay/50">
+        <span class="text-text-muted w-20 shrink-0">Controllers</span>
+        <span class="text-text-secondary">NestJS</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded border border-border-muted bg-bg-overlay/50">
+        <span class="text-text-muted w-20 shrink-0">Modules / DI</span>
+        <span class="text-text-secondary">NestJS</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded border border-border-accent bg-accent-surface">
+        <span class="text-accent w-20 shrink-0 font-semibold">Domain Core</span>
+        <span class="text-accent font-semibold">sotajs/ddd</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded border border-border-muted bg-bg-overlay/50">
+        <span class="text-text-muted w-20 shrink-0">Ports</span>
+        <span class="text-text-secondary">You define</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded border border-border-muted bg-bg-overlay/50">
+        <span class="text-text-muted w-20 shrink-0">Adapters</span>
+        <span class="text-text-secondary">You implement</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ───────────────────────────────────────────── -->
+<section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20">
+  <p class="text-text-muted text-xs font-mono uppercase tracking-[0.15em] mb-3 text-center">Building Blocks</p>
+  <h2 class="text-2xl font-semibold text-center mb-10">Four constructs. Zero dependencies.</h2>
+
+  <div class="grid sm:grid-cols-2 gap-6">
+    <div class="bg-bg-surface border border-border-muted rounded-lg p-6 hover:border-border-accent transition-colors">
+      <p class="text-accent font-mono text-sm font-semibold mb-2">Entity</p>
+      <p class="text-text-secondary text-sm mb-3">Objects with identity. Mutable state changed only through defined actions. Auto-generated setters for all fields.</p>
+      <a href="/docs/api/entity/" class="text-accent text-sm font-mono hover:underline">entity.ts &rarr;</a>
+    </div>
+    <div class="bg-bg-surface border border-border-muted rounded-lg p-6 hover:border-border-accent transition-colors">
+      <p class="text-accent font-mono text-sm font-semibold mb-2">Aggregate</p>
+      <p class="text-text-secondary text-sm mb-3">Transactional boundary. Invariants enforced on every mutation. Nested entity hydration. Built-in domain events.</p>
+      <a href="/docs/api/aggregate/" class="text-accent text-sm font-mono hover:underline">aggregate.ts &rarr;</a>
+    </div>
+    <div class="bg-bg-surface border border-border-muted rounded-lg p-6 hover:border-border-accent transition-colors">
+      <p class="text-accent font-mono text-sm font-semibold mb-2">Value Object</p>
+      <p class="text-text-secondary text-sm mb-3">Defined by attributes, not identity. Structural equality. Immutable props. Computed derived values.</p>
+      <a href="/docs/api/value-object/" class="text-accent text-sm font-mono hover:underline">value-object.ts &rarr;</a>
+    </div>
+    <div class="bg-bg-surface border border-border-muted rounded-lg p-6 hover:border-border-accent transition-colors">
+      <p class="text-accent font-mono text-sm font-semibold mb-2">BrandedId</p>
+      <p class="text-text-secondary text-sm mb-3">Typed ID wrappers. UserId &ne; ProductId at compile time. Custom validation. Zero runtime overhead.</p>
+      <a href="/docs/api/branded-id/" class="text-accent text-sm font-mono hover:underline">branded-id.ts &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── INSTALL CTA ────────────────────────────────────────── -->
+<section class="border-t border-border-muted">
+  <div class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 text-center">
+    <p class="text-accent font-mono text-xs tracking-[0.2em] uppercase mb-3">Start now</p>
+    <h2 class="text-2xl font-semibold mb-6">One command. Zero dependencies.</h2>
+    <div class="inline-block bg-bg-code border border-border-default rounded-md px-5 py-3 font-mono text-sm">
+      npm install @sotajs/ddd
+    </div>
+    <p class="text-text-muted text-sm mt-4">TypeScript ^5.0. Works with any validator. No framework lock-in.</p>
+  </div>
+</section>
+
+</BaseLayout>

@@ -1,0 +1,106 @@
+---
+title: "BrandedId"
+description: "createBrandedId — typed identity wrappers that prevent ID confusion at compile time"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## `createBrandedId(config)`
+
+Creates a **BrandedId** class — a typed wrapper around a string ID that
+prevents accidentally mixing up different ID types (e.g., passing a `UserId`
+where a `ProductId` is expected).
+
+### Signature
+
+```ts
+function createBrandedId(config: {
+  brand: string;
+  validate: (value: string) => string;
+}): BrandedIdClass
+```
+
+### Config
+
+| Property | Type | Description |
+|---|---|---|
+| `brand` | `string` | A unique brand string. Used as a TypeScript literal type for branding. |
+| `validate` | `(value: string) => string` | Validates and optionally sanitizes the raw string. Throw on invalid. |
+
+### Returned Class
+
+| Member | Type | Description |
+|---|---|---|
+| `BrandedId.create(value)` | `BrandedId` | Static factory. Validates and returns instance. |
+| `id.value` | `string & { __brand }` | The branded string value. |
+| `id.equals(other)` | `boolean` | Value comparison. |
+| `id.toString()` | `string` | Returns the raw string. |
+| `id.toJSON()` | `string` | JSON serialization returns the string. |
+
+### Example
+
+```ts
+import { createBrandedId } from "@sotajs/ddd";
+
+const UserId = createBrandedId({
+  brand: "UserId",
+  validate: (v) => {
+    if (!v) throw new Error("UserId cannot be empty");
+    return v;
+  },
+});
+
+const ProductId = createBrandedId({
+  brand: "ProductId",
+  validate: (v) => v,
+});
+
+const uid = UserId.create("abc-123");
+const pid = ProductId.create("abc-123");
+
+// uid and pid have the same string value but are incompatible types
+console.log(uid.value);     // "abc-123"
+console.log(uid.toString()); // "abc-123"
+console.log(JSON.stringify(uid)); // '"abc-123"'
+```
+
+### Why BrandedId?
+
+Without branded IDs:
+
+```ts
+function getUser(id: string) { /* ... */ }
+function getProduct(id: string) { /* ... */ }
+
+const productId = "abc-123";
+getUser(productId); // compiles fine — wrong!
+```
+
+With branded IDs:
+
+```ts
+function getUser(id: ReturnType<typeof UserId.create>) { /* ... */ }
+function getProduct(id: ReturnType<typeof ProductId.create>) { /* ... */ }
+
+const productId = ProductId.create("abc-123");
+getUser(productId); // TypeScript error — UserId expected, got ProductId
+```
+
+### Sanitization
+
+The `validate` callback can also sanitize:
+
+```ts
+const TrimmedId = createBrandedId({
+  brand: "Trimmed",
+  validate: (v) => v.trim().toLowerCase(),
+});
+
+const id = TrimmedId.create("  HELLO  ");
+console.log(id.value); // "hello"
+```
+
+### Pitfalls
+
+- **Brand is compile-time only.** At runtime, the value is a plain string.
+- **Not a UUID validator.** Write your own validation (regex, UUID check) in the `validate` callback.
+- **TypeScript-only safety.** JavaScript consumers won't get type errors, but the runtime validation still applies.
