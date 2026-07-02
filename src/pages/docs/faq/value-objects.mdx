@@ -1,0 +1,73 @@
+---
+title: "FAQ: Value Objects"
+description: "Questions about structural equality, immutability, and when to use VO vs Entity"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## Can Value Objects have behavior?
+
+`createValueObject` doesn't support actions or computed properties. Value Objects
+are immutable snapshots with structural equality. If you need behavior, the
+concept is probably an Entity. Money, Address, Email don't "do" things —
+they describe things. User, Order, Product do things.
+
+## How do I "update" a Value Object?
+
+You don't — you create a new one:
+
+```ts
+const price = Money.create({ amount: 100, currency: 'USD' });
+const discounted = Money.create({ amount: 80, currency: price.props.currency });
+```
+
+Value Objects are immutable by design. This models reality: $100 doesn't
+"become" $80 — you have a new amount.
+
+## Can a Value Object reference an Entity?
+
+By ID only, using a BrandedId:
+
+```ts
+const OrderRefSchema = z.object({
+  orderId: OrderId.schema,  // reference by identity — not the entity itself
+  status: z.enum(['pending', 'confirmed']),
+});
+```
+
+A Value Object referencing an entity instance would create an ownership
+ambiguity. Reference by ID — the universal identifier pattern in DDD.
+
+## Can I use Value Objects as entity fields?
+
+Yes — use the Value Object's Zod schema as a field in the entity schema:
+
+```ts
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  billingAddress: AddressSchema,  // ← Value Object schema
+});
+```
+
+The field will be validated by the Value Object's schema at creation time.
+At runtime it's a plain object — not hydrated as a Value Object instance.
+If you need the Value Object's `.equals()`, hydrate it manually in a computed.
+
+## Why can't I use a plain TypeScript type instead?
+
+```ts
+type Money = { amount: number; currency: string };
+```
+
+This is a TypeScript fiction. At runtime, `{ amount: -500, currency: 'BTC' }`
+satisfies the type. `createValueObject` with Zod catches invalid values at
+creation time. Types describe shapes — schemas enforce them.
+
+## When should something be a Value Object vs an Entity?
+
+If the concept has an independent lifecycle and identity — it's an Entity.
+If it's defined purely by its attributes and doesn't change independently —
+it's a Value Object.
+
+**Entity:** User (changes username, verifies email), Order (transitions status)
+**Value Object:** Money (amount + currency), Address (street + city), Email (validated string)

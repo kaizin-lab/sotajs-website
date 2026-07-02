@@ -1,0 +1,75 @@
+---
+title: "FAQ: Entities"
+description: "Questions about creating entities, actions, computed, and auto-setters"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## Do I have to use Zod?
+
+Currently yes — Zod is the only supported schema library. The `schema` property
+expects a Zod schema. This gives you type inference and auto-setter discovery
+from `schema.shape`. Support for Valibot is planned.
+
+## Can I have actions that don't mutate state?
+
+An action is designed to mutate state. If you need to derive a value without
+mutation, use a computed property. If you need to check a condition and return
+a result, make it a computed boolean: `isVerified`, `isExpired`, `canBeShipped`.
+
+## Can I call one action from another action?
+
+No — actions receive `state` (the mutable draft), not the entity instance.
+You can't call `state.actions.otherAction()`. If two actions share logic,
+extract it to a plain function and call it from both:
+
+```ts
+function ensureVerified(state: UserState) {
+  if (!state.emailVerified) throw new Error('Must verify email first');
+}
+
+actions: {
+  deactivate(state) {
+    ensureVerified(state);
+    state.status = 'inactive';
+  },
+  delete(state) {
+    ensureVerified(state);
+    state.deletedAt = new Date();
+  },
+}
+```
+
+## Why can't I modify props directly?
+
+`props` is frozen via `Object.freeze()`. This catches accidental mutation —
+the most common source of state corruption bugs. All state changes must go
+through auto-setters or actions, which gives you a single place to audit
+state transitions.
+
+## How do I handle optional fields?
+
+Zod optional fields get typed auto-setters that accept the non-optional type:
+
+```ts
+const schema = z.object({
+  id: z.string(),
+  bio: z.string().optional(),
+});
+
+// Auto-generated setter accepts string:
+user.actions.setBio('hello'); // string → ✓
+```
+
+## Can computed properties depend on other computed properties?
+
+No — each computed function receives `props` (the raw state), not the entity
+instance with other computed values. Access to other computed values would
+create dependency chains. If you need derived-from-derived values, compute
+them from props directly.
+
+## Why does my entity have setField() but I didn't write it?
+
+Auto-setters are generated from `schema.shape` at definition time. Every
+non-`id` Zod field gets a typed `setField()`. You don't write them —
+the library generates them. This is not magic — it's reading field names
+from the schema and creating setter functions.

@@ -1,0 +1,65 @@
+---
+title: "FAQ: Aggregates"
+description: "Questions about invariants, nested entities, domain events"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## When should I use Aggregate instead of Entity?
+
+Use Aggregate when you have cross-field consistency rules that must hold after
+every mutation. If your rules are single-field (email format) or action-specific
+(can't ship unconfirmed), Entity with Zod + action guards is enough.
+
+## Do invariants run after auto-setters?
+
+No. Auto-setters mutate state directly without triggering invariants.
+Invariants run on `.create()` and after every **custom action**. The next
+action after an auto-setter will catch invariant violations.
+
+## Can I have multiple levels of nested entities?
+
+`entities` supports one level of nesting — entities declared directly in the
+aggregate schema. Deeply nested structures should be flattened or represented
+as separate aggregates. An Order has OrderItems — but an OrderItem doesn't
+have nested entities of its own inside the aggregate.
+
+## How do I add items to an array in an aggregate?
+
+Use an action that validates and pushes:
+
+```ts
+actions: {
+  addItem(state, item: OrderItemProps) {
+    if (state.status !== 'pending') throw new Error('Order is locked');
+    state.items.push(item);
+  },
+}
+```
+
+Auto-setters work for replacing the entire array (`setItems([...])`), but
+appending with validation requires an action.
+
+## Do I have to dispatch events immediately?
+
+No. Events accumulate in a queue. Pull them when your use case completes:
+
+```ts
+order.actions.ship();
+order.actions.markDelivered();
+const events = order.getPendingEvents();
+await eventBus.publish(events);
+```
+
+This lets you batch events from multiple actions and dispatch them atomically.
+
+## Why is invariants required? Can it be empty?
+
+`invariants` is required so you can't forget it. An empty array `[]` compiles
+but gives zero protection. If you don't have cross-field invariants, use
+`createEntity` instead — it's simpler and gives you auto-setters.
+
+## How do invariants interact with async operations?
+
+They don't. Invariants must be synchronous. Database calls, HTTP requests,
+and other async work belong in the use case — before entity creation or after
+pulling events. Invariants validate the aggregate's own state, not the world.

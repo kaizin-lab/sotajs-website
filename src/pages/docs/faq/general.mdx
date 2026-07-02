@@ -1,0 +1,54 @@
+---
+title: "FAQ: General"
+description: "When to use @sotajs/ddd, how it compares to alternatives"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## When should I use @sotajs/ddd?
+
+When you have domain logic that benefits from encapsulation. If your entities are
+just bags of properties with getters/setters and all logic lives in services,
+you have anemic models. `@sotajs/ddd` makes rich models cheap enough to be
+the default.
+
+You don't need it if:
+- Your app is purely CRUD with no business rules
+- Your entities have no behavior beyond property access
+- You're using a framework that forces its own entity model (TypeORM)
+
+## How does this compare to NestJS CQRS module?
+
+NestJS CQRS gives you building blocks (CommandBus, EventBus, Saga) but doesn't
+enforce domain model integrity. You still write anemic classes. `@sotajs/ddd`
+gives you the domain layer — entities with protected state, invariants, actions.
+You use it *with* NestJS, not instead of. See [NestJS guide](/docs/nestjs/).
+
+## How does this compare to Zod alone?
+
+Zod validates input. `@sotajs/ddd` uses your Zod schema as the entity's type system
+and adds: auto-setters, frozen state, identity comparison, invariants, domain events.
+Zod is the foundation — the library builds the house on top.
+
+## How does this compare to class-validator + TypeORM?
+
+Different philosophy. TypeORM entities are database rows with decorators.
+`@sotajs/ddd` entities are domain objects with behavior. They don't know about
+the database. You map between them explicitly — see [ORM Integration](/docs/orm-integration/).
+
+## Does this replace my ORM?
+
+No. `@sotajs/ddd` is your domain layer. Your ORM is your persistence layer.
+You hydrate entities from database rows in the repository, and dehydrate
+them back before saving. Clean separation, no magic mapping.
+
+## Why not just use classes with private fields?
+
+You can. `@sotajs/ddd` automates the boilerplate: freeze, auto-setters, identity,
+invariants, events. A hand-rolled class with `#private` fields and getters works —
+the library just makes it 10 lines instead of 80.
+
+## Is this a framework?
+
+No. Four functions: `createEntity`, `createAggregate`, `createValueObject`,
+`createBrandedId`. No decorators, no DI container, no base classes to extend.
+You import what you need and use it in your existing project.

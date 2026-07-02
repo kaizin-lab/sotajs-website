@@ -1,0 +1,61 @@
+---
+title: "FAQ: Branded IDs"
+description: "Questions about nominal typing, brand strings, and compile-time safety"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+## Does BrandedId have any runtime cost?
+
+No. A BrandedId is a `string` at runtime. The brand exists only in the type
+system. Serialization, comparison, storage — all work exactly like a string.
+
+## Can I use BrandedId with Prisma/Drizzle/Knex?
+
+Yes. BrandedIds are strings at runtime. Store them as `string`/`text`/`uuid`
+in your database. When reading, cast the string to the branded type:
+
+```ts
+const userId = UserId.create(row.id); // validates + brands
+```
+
+## What if two entities use UUIDs — do I still need separate brands?
+
+Yes. The brand is what makes `UserId` distinct from `OrderId`. Both may store
+UUIDs, but the compiler should prevent you from passing an OrderId to a function
+expecting a UserId. The brand is about *preventing mistakes* — not about
+the storage format.
+
+## Can I use BrandedId for non-UUID identifiers?
+
+Yes — use the appropriate Zod schema:
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().cuid2() });
+const SlugId = createBrandedId({ brand: 'SlugId', schema: z.string().regex(/^[a-z0-9-]+$/) });
+```
+
+The schema validates the format. The brand makes the type distinct.
+Any string format works.
+
+## Why not just use an opaque type or unique symbol?
+
+Opaque types (like `type UserId = string & { readonly __opaque: unique symbol }`)
+achieve the same compile-time safety. `createBrandedId` is a convenience wrapper
+that also adds runtime validation via Zod. You get compile-time safety + runtime
+validation in one call.
+
+## Can I have a BrandedId that allows any string?
+
+```ts
+const AnyId = createBrandedId({ brand: 'AnyId', schema: z.string() });
+```
+
+This compiles but gives you no runtime validation. Every value passes.
+Use the narrowest schema that's correct — `z.string().uuid()`, `z.string().cuid2()`,
+or a regex. The schema is your runtime gate.
+
+## Do BrandedIds work with JSON serialization?
+
+Yes. `JSON.stringify(UserId.create('b3f1...'))` produces `'"b3f1...'` — a plain
+string. When deserializing, pass the string back through `.create()` to restore
+validation and branding.

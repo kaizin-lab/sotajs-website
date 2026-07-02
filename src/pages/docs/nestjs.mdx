@@ -1,0 +1,245 @@
+---
+title: "NestJS Integration"
+description: "Use @sotajs/ddd as your domain layer in a NestJS application"
+layout: ../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - How to structure domain code in a NestJS project
+> - How to integrate entities with NestJS services and controllers
+> - How to handle persistence with Prisma/Drizzle
+> - Common patterns: use cases, repositories, dependency injection
+
+`@sotajs/ddd` is framework-agnostic. It works with any Node.js backend.
+This guide shows the recommended patterns for NestJS.
+
+## Project structure
+
+```
+src/
+├── domain/                    ← @sotajs/ddd lives here
+│   ├── user/
+│   │   ├── user.entity.ts
+│   │   ├── user.repository.ts
+│   │   └── user-id.brand.ts
+│   ├── order/
+│   │   ├── order.aggregate.ts
+│   │   ├── order-item.entity.ts
+│   │   └── order.repository.ts
+│   └── shared/
+│       ├── money.vo.ts
+│       └── email.vo.ts
+├── application/               ← use cases (orchestration)
+│   ├── user/
+│   │   └── create-user.usecase.ts
+│   └── order/
+│       └── place-order.usecase.ts
+├── infrastructure/            ← persistence implementations
+│   ├── prisma/
+│   │   ├── prisma.service.ts
+│   │   ├── user.prisma-repo.ts
+│   │   └── order.prisma-repo.ts
+│   └── events/
+│       └── event-bus.service.ts
+└── presentation/              ← controllers, DTOs
+    ├── user.controller.ts
+    └── order.controller.ts
+```
+
+Domain is pure TypeScript — no NestJS decorators, no database code.
+Application orchestrates. Infrastructure implements. Presentation exposes.
+
+## Entity example
+
+```ts
+// src/domain/user/user.entity.ts
+import { z } from 'zod';
+import { createEntity } from '@sotajs/ddd';
+
+export const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string().min(3),
+  email: z.string().email(),
+  emailVerified: z.boolean().default(false),
+});
+
+export const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    verifyEmail(state) {
+      if (state.emailVerified) throw new Error('Already verified');
+      state.emailVerified = true;
+    },
+  },
+  computed: {
+    isVerified(props) { return props.emailVerified; },
+  },
+});
+export type User = ReturnType<typeof User.create>;
+```
+
+## Repository (interface in domain, implementation in infrastructure)
+
+```ts
+// src/domain/user/user.repository.ts
+import { User } from './user.entity';
+
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  save(user: User): Promise<void>;
+}
+```
+
+```ts
+// src/infrastructure/prisma/user.prisma-repo.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+import { UserRepository, User } from '../../domain/user/user.entity';
+
+@Injectable()
+export class UserPrismaRepo implements UserRepository {
+  constructor(private prisma: PrismaService) {}
+
+  async findById(id: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { id } });
+    return row ? User.create(row) : null;
+  }
+
+  async save(user: User): Promise<void> {
+    await this.prisma.user.upsert({
+      where: { id: user.props.id },
+      create: user.props,
+      update: user.props,
+    });
+  }
+}
+```
+
+> `findById` hydrates: database row → `User.create()`. `save` dehydrates: `user.props` → database.
+> The entity never knows about Prisma. The repository is the translation layer.
+
+## Use case (application layer)
+
+```ts
+// src/application/user/create-user.usecase.ts
+import { Injectable } from '@nestjs/common';
+import { User } from '../../domain/user/user.entity';
+import { UserRepository } from '../../domain/user/user.repository';
+
+@Injectable()
+export class CreateUserUseCase {
+  constructor(private readonly users: UserRepository) {}
+
+  async execute(data: { id: string; username: string; email: string }) {
+    const user = User.create(data);
+    await this.users.save(user);
+    return user;
+  }
+}
+```
+
+Use cases are plain classes — inject repositories, call domain logic, persist.
+No business rules here — the entity enforces those.
+
+## Use case with domain events
+
+```ts
+// src/application/order/ship-order.usecase.ts
+import { Injectable } from '@nestjs/common';
+import { OrderRepository } from '../../domain/order/order.repository';
+import { EventBusService } from '../../infrastructure/events/event-bus.service';
+
+@Injectable()
+export class ShipOrderUseCase {
+  constructor(
+    private readonly orders: OrderRepository,
+    private readonly eventBus: EventBusService,
+  ) {}
+
+  async execute(orderId: string) {
+    const order = await this.orders.findById(orderId);
+    if (!order) throw new NotFoundException('Order not found');
+
+    order.actions.ship();
+    await this.orders.save(order);
+
+    const events = order.getPendingEvents();
+    await this.eventBus.publish(events);
+  }
+}
+```
+
+> Aggregate produces events. Use case pulls and dispatches them.
+> The domain layer has no dependency on NestJS event bus.
+
+## Controller (presentation layer)
+
+```ts
+// src/presentation/user.controller.ts
+import { Controller, Post, Body } from '@nestjs/common';
+import { CreateUserUseCase } from '../application/user/create-user.usecase';
+import { VerifyEmailUseCase } from '../application/user/verify-email.usecase';
+
+@Controller('users')
+export class UserController {
+  constructor(
+    private readonly createUser: CreateUserUseCase,
+    private readonly verifyEmail: VerifyEmailUseCase,
+  ) {}
+
+  @Post()
+  async create(@Body() dto: CreateUserDto) {
+    const user = await this.createUser.execute(dto);
+    return { id: user.props.id, username: user.props.username };
+  }
+
+  @Post(':id/verify')
+  async verify(@Param('id') id: string) {
+    await this.verifyEmail.execute(id);
+    return { ok: true };
+  }
+}
+```
+
+Controllers are thin — validate input, call use case, return response.
+No domain logic in the controller.
+
+## Module wiring
+
+```ts
+// src/domain/domain.module.ts
+import { Module } from '@nestjs/common';
+import { UserPrismaRepo } from '../infrastructure/prisma/user.prisma-repo';
+import { CreateUserUseCase } from '../application/user/create-user.usecase';
+
+@Module({
+  providers: [
+    CreateUserUseCase,
+    { provide: 'UserRepository', useClass: UserPrismaRepo },
+  ],
+  exports: [CreateUserUseCase],
+})
+export class DomainModule {}
+```
+
+---
+
+## What you've learned
+
+**Domain is pure TypeScript.** No NestJS decorators, no database code, no HTTP
+concerns in your entities. `@sotajs/ddd` gives you the domain layer — NestJS
+handles DI, HTTP, and module wiring.
+
+**Repository pattern maps entities to persistence.** Hydrate: `User.create(row)`.
+Dehydrate: `user.props`. The entity never knows about Prisma or Drizzle.
+
+**Use cases orchestrate.** Create entity → call actions → persist → pull events → dispatch.
+All in one place, testable without HTTP.
+
+**Controllers are thin.** Validate DTOs, call use case, return response.
+No business rules at the HTTP layer.
+
+## Next
+
+→ [ORM Integration](/docs/orm-integration/) — Prisma, Drizzle, Knex patterns
+→ [FAQ](/docs/faq/) — answers organized by topic
