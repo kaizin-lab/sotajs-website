@@ -1,0 +1,202 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Internals</div> <a href="/docs/how-it-works/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">How It Works</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Integration</div> <a href="/docs/nestjs/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">NestJS</a> <a href="/docs/orm-integration/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">ORM (Prisma/Drizzle/Knex)</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Reference</div> <a href="/docs/style-guide/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Style Guide</a> <a href="/docs/faq/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">FAQ</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>How to structure domain code in a NestJS project</li>
+<li>How to integrate entities with NestJS services and controllers</li>
+<li>How to handle persistence with Prisma/Drizzle</li>
+<li>Common patterns: use cases, repositories, dependency injection</li>
+</ul>
+</blockquote>
+<p><code>@sotajs/ddd</code> is framework-agnostic. It works with any Node.js backend.
+This guide shows the recommended patterns for NestJS.</p>
+<h2 id="project-structure">Project structure</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>src/</span></span>
+<span class="line"><span>├── domain/                    ← @sotajs/ddd lives here</span></span>
+<span class="line"><span>│   ├── user/</span></span>
+<span class="line"><span>│   │   ├── user.entity.ts</span></span>
+<span class="line"><span>│   │   ├── user.repository.ts</span></span>
+<span class="line"><span>│   │   └── user-id.brand.ts</span></span>
+<span class="line"><span>│   ├── order/</span></span>
+<span class="line"><span>│   │   ├── order.aggregate.ts</span></span>
+<span class="line"><span>│   │   ├── order-item.entity.ts</span></span>
+<span class="line"><span>│   │   └── order.repository.ts</span></span>
+<span class="line"><span>│   └── shared/</span></span>
+<span class="line"><span>│       ├── money.vo.ts</span></span>
+<span class="line"><span>│       └── email.vo.ts</span></span>
+<span class="line"><span>├── application/               ← use cases (orchestration)</span></span>
+<span class="line"><span>│   ├── user/</span></span>
+<span class="line"><span>│   │   └── create-user.usecase.ts</span></span>
+<span class="line"><span>│   └── order/</span></span>
+<span class="line"><span>│       └── place-order.usecase.ts</span></span>
+<span class="line"><span>├── infrastructure/            ← persistence implementations</span></span>
+<span class="line"><span>│   ├── prisma/</span></span>
+<span class="line"><span>│   │   ├── prisma.service.ts</span></span>
+<span class="line"><span>│   │   ├── user.prisma-repo.ts</span></span>
+<span class="line"><span>│   │   └── order.prisma-repo.ts</span></span>
+<span class="line"><span>│   └── events/</span></span>
+<span class="line"><span>│       └── event-bus.service.ts</span></span>
+<span class="line"><span>└── presentation/              ← controllers, DTOs</span></span>
+<span class="line"><span>    ├── user.controller.ts</span></span>
+<span class="line"><span>    └── order.controller.ts</span></span></code></pre>
+<p>Domain is pure TypeScript — no NestJS decorators, no database code.
+Application orchestrates. Infrastructure implements. Presentation exposes.</p>
+<h2 id="entity-example">Entity example</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/domain/user/user.entity.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createEntity } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#79B8FF"> UserSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  username: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">min</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">3</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  email: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  emailVerified: z.</span><span style="color:#B392F0">boolean</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">default</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    verifyEmail</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Already verified&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  computed: {</span></span>
+<span class="line"><span style="color:#B392F0">    isVerified</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.emailVerified; },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> type</span><span style="color:#B392F0"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> User.create&gt;;</span></span></code></pre>
+<h2 id="repository-interface-in-domain-implementation-in-infrastructure">Repository (interface in domain, implementation in infrastructure)</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/domain/user/user.repository.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { User } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;./user.entity&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> interface</span><span style="color:#B392F0"> UserRepository</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">  findById</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&lt;</span><span style="color:#B392F0">User</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">&gt;;</span></span>
+<span class="line"><span style="color:#B392F0">  save</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">user</span><span style="color:#F97583">:</span><span style="color:#B392F0"> User</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&lt;</span><span style="color:#79B8FF">void</span><span style="color:#E1E4E8">&gt;;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/infrastructure/prisma/user.prisma-repo.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { Injectable } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@nestjs/common&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { PrismaService } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;./prisma.service&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { UserRepository, User } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../../domain/user/user.entity&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#B392F0">Injectable</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> UserPrismaRepo</span><span style="color:#F97583"> implements</span><span style="color:#B392F0"> UserRepository</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">private</span><span style="color:#FFAB70"> prisma</span><span style="color:#F97583">:</span><span style="color:#B392F0"> PrismaService</span><span style="color:#E1E4E8">) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> findById</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&lt;</span><span style="color:#B392F0">User</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">&gt; {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> row</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.prisma.user.</span><span style="color:#B392F0">findUnique</span><span style="color:#E1E4E8">({ where: { id } });</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> row </span><span style="color:#F97583">?</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(row) </span><span style="color:#F97583">:</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> save</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">user</span><span style="color:#F97583">:</span><span style="color:#B392F0"> User</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&lt;</span><span style="color:#79B8FF">void</span><span style="color:#E1E4E8">&gt; {</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.prisma.user.</span><span style="color:#B392F0">upsert</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">      where: { id: user.props.id },</span></span>
+<span class="line"><span style="color:#E1E4E8">      create: user.props,</span></span>
+<span class="line"><span style="color:#E1E4E8">      update: user.props,</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p><code>findById</code> hydrates: database row → <code>User.create()</code>. <code>save</code> dehydrates: <code>user.props</code> → database.
+The entity never knows about Prisma. The repository is the translation layer.</p>
+</blockquote>
+<h2 id="use-case-application-layer">Use case (application layer)</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/application/user/create-user.usecase.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { Injectable } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@nestjs/common&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { User } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../../domain/user/user.entity&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { UserRepository } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../../domain/user/user.repository&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#B392F0">Injectable</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> CreateUserUseCase</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">private</span><span style="color:#F97583"> readonly</span><span style="color:#FFAB70"> users</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserRepository</span><span style="color:#E1E4E8">) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> execute</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">data</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">username</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">email</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> user</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(data);</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.users.</span><span style="color:#B392F0">save</span><span style="color:#E1E4E8">(user);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> user;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Use cases are plain classes — inject repositories, call domain logic, persist.
+No business rules here — the entity enforces those.</p>
+<h2 id="use-case-with-domain-events">Use case with domain events</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/application/order/ship-order.usecase.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { Injectable } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@nestjs/common&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { OrderRepository } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../../domain/order/order.repository&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { EventBusService } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../../infrastructure/events/event-bus.service&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#B392F0">Injectable</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> ShipOrderUseCase</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#F97583"> readonly</span><span style="color:#FFAB70"> orders</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderRepository</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#F97583"> readonly</span><span style="color:#FFAB70"> eventBus</span><span style="color:#F97583">:</span><span style="color:#B392F0"> EventBusService</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  ) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> execute</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">orderId</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.orders.</span><span style="color:#B392F0">findById</span><span style="color:#E1E4E8">(orderId);</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">order) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> NotFoundException</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Order not found&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    order.actions.</span><span style="color:#B392F0">ship</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.orders.</span><span style="color:#B392F0">save</span><span style="color:#E1E4E8">(order);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.eventBus.</span><span style="color:#B392F0">publish</span><span style="color:#E1E4E8">(events);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Aggregate produces events. Use case pulls and dispatches them.
+The domain layer has no dependency on NestJS event bus.</p>
+</blockquote>
+<h2 id="controller-presentation-layer">Controller (presentation layer)</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/presentation/user.controller.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { Controller, Post, Body } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@nestjs/common&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { CreateUserUseCase } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../application/user/create-user.usecase&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { VerifyEmailUseCase } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../application/user/verify-email.usecase&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#B392F0">Controller</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;users&#39;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> UserController</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#F97583"> readonly</span><span style="color:#FFAB70"> createUser</span><span style="color:#F97583">:</span><span style="color:#B392F0"> CreateUserUseCase</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#F97583"> readonly</span><span style="color:#FFAB70"> verifyEmail</span><span style="color:#F97583">:</span><span style="color:#B392F0"> VerifyEmailUseCase</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  ) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  @</span><span style="color:#B392F0">Post</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> create</span><span style="color:#E1E4E8">(@</span><span style="color:#B392F0">Body</span><span style="color:#E1E4E8">() </span><span style="color:#FFAB70">dto</span><span style="color:#F97583">:</span><span style="color:#B392F0"> CreateUserDto</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> user</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.createUser.</span><span style="color:#B392F0">execute</span><span style="color:#E1E4E8">(dto);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { id: user.props.id, username: user.props.username };</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  @</span><span style="color:#B392F0">Post</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;:id/verify&#39;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> verify</span><span style="color:#E1E4E8">(@</span><span style="color:#B392F0">Param</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;id&#39;</span><span style="color:#E1E4E8">) </span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.verifyEmail.</span><span style="color:#B392F0">execute</span><span style="color:#E1E4E8">(id);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { ok: </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8"> };</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Controllers are thin — validate input, call use case, return response.
+No domain logic in the controller.</p>
+<h2 id="module-wiring">Module wiring</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// src/domain/domain.module.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { Module } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@nestjs/common&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { UserPrismaRepo } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../infrastructure/prisma/user.prisma-repo&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { CreateUserUseCase } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;../application/user/create-user.usecase&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">@</span><span style="color:#B392F0">Module</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  providers: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    CreateUserUseCase,</span></span>
+<span class="line"><span style="color:#E1E4E8">    { provide: </span><span style="color:#9ECBFF">&#39;UserRepository&#39;</span><span style="color:#E1E4E8">, useClass: UserPrismaRepo },</span></span>
+<span class="line"><span style="color:#E1E4E8">  ],</span></span>
+<span class="line"><span style="color:#E1E4E8">  exports: [CreateUserUseCase],</span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> DomainModule</span><span style="color:#E1E4E8"> {}</span></span></code></pre>
+<hr/>
+<h2 id="what-youve-learned">What you’ve learned</h2>
+<p><strong>Domain is pure TypeScript.</strong> No NestJS decorators, no database code, no HTTP
+concerns in your entities. <code>@sotajs/ddd</code> gives you the domain layer — NestJS
+handles DI, HTTP, and module wiring.</p>
+<p><strong>Repository pattern maps entities to persistence.</strong> Hydrate: <code>User.create(row)</code>.
+Dehydrate: <code>user.props</code>. The entity never knows about Prisma or Drizzle.</p>
+<p><strong>Use cases orchestrate.</strong> Create entity → call actions → persist → pull events → dispatch.
+All in one place, testable without HTTP.</p>
+<p><strong>Controllers are thin.</strong> Validate DTOs, call use case, return response.
+No business rules at the HTTP layer.</p>
+<h2 id="next">Next</h2>
+<p>→ <a href="/docs/orm-integration/">ORM Integration</a> — Prisma, Drizzle, Knex patterns
+→ <a href="/docs/faq/">FAQ</a> — answers organized by topic</p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
