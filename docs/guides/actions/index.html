@@ -1,0 +1,112 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Guides</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <p>An action is a method on your entity that mutates state <strong>with intent</strong>.
+It’s not <code>setField(value)</code> — that’s an auto-setter. An action earns its place
+through validation, conditional logic, or multi-field changes.</p>
+<h2 id="anatomy-of-an-action">Anatomy of an action</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  verifyEmail</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Already verified&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li><code>state</code> is a mutable draft of the entity’s props. Mutate it directly.</li>
+<li>After the action returns, state is frozen and invariants (if any) are checked.</li>
+<li>Throw an <code>Error</code> to reject the mutation — state is rolled back.</li>
+</ul>
+<h2 id="guard-clauses--make-illegal-states-unrepresentable">Guard clauses — make illegal states unrepresentable</h2>
+<p>The core job of an action is to reject mutations that would put the entity
+in an invalid state:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  addRole</span><span style="color:#E1E4E8">(state, role: string) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#79B8FF">VALID_ROLES</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(role)) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">`Unknown role: ${</span><span style="color:#E1E4E8">role</span><span style="color:#9ECBFF">}`</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (state.roles.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(role)) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">`Already has role: ${</span><span style="color:#E1E4E8">role</span><span style="color:#9ECBFF">}`</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.roles.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(role);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#B392F0">  removeRole</span><span style="color:#E1E4E8">(state, role: string) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (role </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> &#39;admin&#39;</span><span style="color:#F97583"> &amp;&amp;</span><span style="color:#E1E4E8"> state.roles.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Cannot remove last admin&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.roles </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> state.roles.</span><span style="color:#B392F0">filter</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">r</span><span style="color:#F97583"> =&gt;</span><span style="color:#E1E4E8"> r </span><span style="color:#F97583">!==</span><span style="color:#E1E4E8"> role);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>❌ <strong>Validating outside the entity:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// In the controller:</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">user.props.emailVerified) {</span></span>
+<span class="line"><span style="color:#F97583">  throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> BadRequestException</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Verify email first&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">deactivate</span><span style="color:#E1E4E8">();</span></span></code></pre>
+<blockquote>
+<p>The guard <code>is email verified?</code> belongs in <code>deactivate()</code>, not in the controller.
+When you validate outside, every caller must remember the precondition.
+When you validate inside, the entity enforces its own rules.</p>
+</blockquote>
+<h2 id="multi-field-atomic-changes">Multi-field atomic changes</h2>
+<p>When two fields must change together or not at all:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  transferOwnership</span><span style="color:#E1E4E8">(state, newOwnerId: string) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.previousOwnerId </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> state.ownerId;</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.ownerId </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> newOwnerId;</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.transferredAt </span><span style="color:#F97583">=</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>❌ <strong>Splitting atomic changes across calls:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setOwnerId</span><span style="color:#E1E4E8">(newId);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setTransferredAt</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#6A737D">// Between these calls, ownerId is new but transferredAt is stale</span></span></code></pre>
+<blockquote>
+<p>If the two mutations represent one business operation, make it one action.
+Callers can call auto-setters in any order — and leave intermediate states no one intended.</p>
+</blockquote>
+<h2 id="action-that-rejects-on-invalid-state-transition">Action that rejects on invalid state transition</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (state.status </span><span style="color:#F97583">!==</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Only confirmed orders can be shipped&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>The guard enforces the state machine: <code>pending → confirmed → shipped</code>.
+No caller can accidentally ship an unconfirmed order.</p>
+<p>❌ <strong>Trusting the caller to know the state:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// hopes caller checked first</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>An entity that can be put in an invalid state by calling its own method
+has leaked its invariants. Every action should protect its own preconditions.</p>
+</blockquote>
+<h2 id="domain-events-from-actions">Domain events from actions</h2>
+<p>Actions in an Aggregate can return <code>{ event }</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  confirm</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Events accumulate in a queue. Pull them after your use case:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">confirm</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// dispatch to event bus, email service, analytics...</span></span></code></pre>
+<blockquote>
+<p>Events are pull-based by design. No hidden side effects.
+If you don’t return them, they don’t exist. If you don’t pull them, nothing happens.</p>
+</blockquote>
+<h2 id="decision-tree-action-or-auto-setter">Decision tree: action or auto-setter?</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>Does the mutation have business meaning beyond &quot;change this value&quot;?</span></span>
+<span class="line"><span>  ├── NO  → auto-setter (setField)</span></span>
+<span class="line"><span>  └── YES → action</span></span>
+<span class="line"><span>       ├── Guard clause needed?          → action</span></span>
+<span class="line"><span>       ├── Multiple fields together?     → action</span></span>
+<span class="line"><span>       ├── State machine transition?     → action</span></span>
+<span class="line"><span>       ├── Domain event returned?        → action (Aggregate)</span></span>
+<span class="line"><span>       └── Validation beyond Zod schema? → action</span></span></code></pre>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="/docs/guides/invariants/">Invariants</a> — cross-field consistency rules</li>
+<li><a href="/docs/guides/computed-properties/">Computed Properties</a> — derived values from state</li>
+<li><a href="/docs/guides/aggregates/">Building Aggregates</a> — where actions meet invariants</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

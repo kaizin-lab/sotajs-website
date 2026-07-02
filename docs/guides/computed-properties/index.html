@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Guides</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <p>Computed properties derive values from entity props. They’re accessed as properties
+(no function call) and recalculated on every access from the current state.</p>
+<h2 id="defining-computed">Defining computed</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  displayName</span><span style="color:#E1E4E8">(props) { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.username; },</span></span>
+<span class="line"><span style="color:#B392F0">  isVerified</span><span style="color:#E1E4E8">(props)  { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.emailVerified; },</span></span>
+<span class="line"><span style="color:#B392F0">  initials</span><span style="color:#E1E4E8">(props)    { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.username.</span><span style="color:#B392F0">slice</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">2</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">toUpperCase</span><span style="color:#E1E4E8">(); },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Usage:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.displayName;  </span><span style="color:#6A737D">// &#39;alice&#39; — not user.displayName()</span></span>
+<span class="line"><span style="color:#E1E4E8">user.isVerified;   </span><span style="color:#6A737D">// false</span></span>
+<span class="line"><span style="color:#E1E4E8">user.initials;     </span><span style="color:#6A737D">// &#39;AL&#39;</span></span></code></pre>
+<p>They look like getters, work like getters, but are defined alongside your schema and actions.</p>
+<h2 id="why-not-class-getters">Why not class getters?</h2>
+<p>You could write:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> User</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  get</span><span style="color:#B392F0"> displayName</span><span style="color:#E1E4E8">() { </span><span style="color:#F97583">return</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.username; }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>But computed properties live in the entity config — next to the schema that defines
+the fields they read from. No splitting logic between <code>createEntity()</code> call and
+a separate class body.</p>
+<h2 id="what-computed-is-for">What computed is FOR</h2>
+<ul>
+<li>Formatting: <code>initials</code>, <code>fullName</code>, <code>abbreviatedAddress</code></li>
+<li>Boolean checks: <code>isVerified</code>, <code>isExpired</code>, <code>hasChildren</code></li>
+<li>Aggregations: <code>totalPrice = items.reduce(...)</code>, <code>wordCount</code></li>
+<li>Lookups: <code>primaryEmail = emails[0]</code></li>
+</ul>
+<p>Keep them synchronous, pure, and fast.</p>
+<h2 id="what-computed-is-not-for">What computed is NOT for</h2>
+<p>❌ <strong>I/O in computed:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  avatarUrl</span><span style="color:#E1E4E8">(props) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> s3.</span><span style="color:#B392F0">getSignedUrl</span><span style="color:#E1E4E8">(props.avatarKey); </span><span style="color:#6A737D">// ❌ runs on every property access</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Computed runs on every access. A network call here means your entity is making
+HTTP requests when you read a property. Generate signed URLs at the use-case level.</p>
+</blockquote>
+<p>❌ <strong>Heavy computation:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  recommendationScore</span><span style="color:#E1E4E8">(props) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> mlModel.</span><span style="color:#B392F0">predict</span><span style="color:#E1E4E8">(props.history); </span><span style="color:#6A737D">// ❌ CPU-heavy, runs on every access</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>If the value is expensive to compute, calculate it once in the use case
+and attach it as a separate return value or a dedicated field.</p>
+</blockquote>
+<p>❌ <strong>Mutating state from computed:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  nextId</span><span style="color:#E1E4E8">(props) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    props.counter</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">;     </span><span style="color:#6A737D">// ❌ computed should never mutate</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> props.counter;</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Computed receives a read-only snapshot. Mutating it has undefined behavior.
+Use an action if you need to change state.</p>
+</blockquote>
+<p>❌ <strong>Async computed:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#E1E4E8">  async </span><span style="color:#B392F0">recommendations</span><span style="color:#E1E4E8">(props) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> } </span><span style="color:#6A737D">// ❌ not supported</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Computed is synchronous. If you need async derivation, compute it before
+creating the entity or run it in the use case.</p>
+</blockquote>
+<h2 id="computed-vs-action--the-line">Computed vs. action — the line</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Computed</th><th>Action</th></tr></thead><tbody><tr><td>Reads state, returns value</td><td>Reads state, mutates state</td></tr><tr><td>No side effects</td><td>Changes entity state</td></tr><tr><td>Property access (<code>user.isVerified</code>)</td><td>Method call (<code>user.actions.verifyEmail()</code>)</td></tr><tr><td>Can’t reject or throw (design intent)</td><td>Can throw to reject mutation</td></tr></tbody></table>
+<p>❌ <strong>Using an action when computed would do:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  getDisplayName</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> state.username; }, </span><span style="color:#6A737D">// ❌ this is computed territory</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>If it reads state and returns a value without mutating — make it a computed property.</p>
+</blockquote>
+<p>❌ <strong>Using computed to enforce validation:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  isValid</span><span style="color:#E1E4E8">(props) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (props.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#79B8FF"> false</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// silently returns false</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Don’t use computed for validation. Invariants (on Aggregate) or guard clauses
+(in actions) actively reject invalid states. Computed is passive.</p>
+</blockquote>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="/docs/guides/invariants/">Invariants</a> — active validation that rejects invalid states</li>
+<li><a href="/docs/guides/actions/">Actions</a> — mutations with business meaning</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

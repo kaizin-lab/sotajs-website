@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Guides</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <p>Entity state is read through <code>props</code> and mutated through auto-setters.
+No getters, no manual setters — the library handles both.</p>
+<h2 id="reading-state">Reading state</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> user</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;b3f1...&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">user.props.username;       </span><span style="color:#6A737D">// &#39;alice&#39;</span></span>
+<span class="line"><span style="color:#E1E4E8">user.props.emailVerified;  </span><span style="color:#6A737D">// false</span></span></code></pre>
+<p><code>props</code> returns a frozen snapshot. You can read any field, but you can’t mutate it directly:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.props.username </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;hacker&#39;</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// TypeError: Cannot assign to read only property</span></span></code></pre>
+<blockquote>
+<p>The object is <code>Object.freeze()</code>’d. This is a debug-time guard — not a security boundary.
+It catches accidental mutation, which is the most common source of “how did this value change?” bugs.</p>
+</blockquote>
+<p>❌ <strong>Storing props in a local variable and expecting updates:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> { </span><span style="color:#79B8FF">username</span><span style="color:#E1E4E8"> } </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> user.props;</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setUsername</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;alicia&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">username; </span><span style="color:#6A737D">// still &#39;alice&#39; — you destructured a snapshot</span></span></code></pre>
+<blockquote>
+<p><code>props</code> is a snapshot, not a reactive reference. Always read <code>user.props.username</code>
+after mutations if you need the current value.</p>
+</blockquote>
+<p>❌ <strong>Mutating nested objects/arrays from props:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.props.tags.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;admin&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// mutates the frozen snapshot? No — but don&#39;t rely on this</span></span></code></pre>
+<blockquote>
+<p>Frozen objects don’t freeze nested arrays. Don’t mutate anything from <code>props</code>.
+Use actions (or auto-setters for flat fields). For nested mutations, see <a href="/docs/guides/actions/">Actions</a>.</p>
+</blockquote>
+<h2 id="auto-setters--the-default-for-simple-mutation">Auto-setters — the default for simple mutation</h2>
+<p>Every Zod field (except <code>id</code>) gets a typed auto-setter:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  username: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  age: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  status: z.</span><span style="color:#B392F0">enum</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">&#39;active&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;inactive&#39;</span><span style="color:#E1E4E8">]),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Auto-generated, fully typed:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setUsername</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;alicia&#39;</span><span style="color:#E1E4E8">);   </span><span style="color:#6A737D">// string → ✓</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setAge</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">30</span><span style="color:#E1E4E8">);              </span><span style="color:#6A737D">// number → ✓</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setStatus</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;inactive&#39;</span><span style="color:#E1E4E8">);   </span><span style="color:#6A737D">// &#39;active&#39; | &#39;inactive&#39; → ✓</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setAge</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;30&#39;</span><span style="color:#E1E4E8">);            </span><span style="color:#6A737D">// TypeScript error: not a number</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setStatus</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;banned&#39;</span><span style="color:#E1E4E8">);     </span><span style="color:#6A737D">// TypeScript error: not in enum</span></span></code></pre>
+<p>Auto-setters are discovered from <code>schema.shape</code>. They always exist for Zod/Valibot schemas,
+no trial validation needed.</p>
+<p>❌ <strong>Writing manual setters as actions:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  setName</span><span style="color:#E1E4E8">(state, name: string) { state.name </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> name; },</span></span>
+<span class="line"><span style="color:#B392F0">  setAge</span><span style="color:#E1E4E8">(state, age: number) { state.age </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> age; },</span></span>
+<span class="line"><span style="color:#B392F0">  setStatus</span><span style="color:#E1E4E8">(state, s: string) { state.status </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> s; },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Three actions that do what auto-setters already do. Delete them.
+The user writes <code>user.actions.setName(&#39;alice&#39;)</code> regardless — you just moved
+the definition into your entity config for no benefit.</p>
+</blockquote>
+<h2 id="when-auto-setters-are-enough">When auto-setters ARE enough</h2>
+<p>A surprising amount of domain logic is just “set this field to that value”:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// All handled by auto-setters:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setBio</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;new bio&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setAvatarUrl</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;https://...&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setLastLoginAt</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setProfileComplete</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>Each one is a single assignment. No validation, no guards, no multi-field changes.
+Auto-setters handle every one without you writing a line.</p>
+<h2 id="when-auto-setters-are-not-enough">When auto-setters are NOT enough</h2>
+<p>Auto-setters are pure assignment. You need an <a href="/docs/guides/actions/">Action</a> when:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Situation</th><th>Tool</th></tr></thead><tbody><tr><td>Guard clause before mutation</td><td>Action</td></tr><tr><td>Multi-field change (atomic)</td><td>Action</td></tr><tr><td>Domain event emission</td><td>Action (Aggregate)</td></tr><tr><td>Validation beyond Zod</td><td>Action</td></tr><tr><td>State machine transition logic</td><td>Action</td></tr></tbody></table>
+<h2 id="identity-and-equality">Identity and equality</h2>
+<p>Entities compare by identity, not by props:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;bob&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b);   </span><span style="color:#6A737D">// true — same id</span></span>
+<span class="line"><span style="color:#E1E4E8">a </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> b;       </span><span style="color:#6A737D">// false — different object references</span></span></code></pre>
+<p>❌ <strong>Comparing entities with <code>===</code>:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (userA </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> userB) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> } </span><span style="color:#6A737D">// compares object identity, not entity identity</span></span></code></pre>
+<blockquote>
+<p>Use <code>.equals()</code> for entity comparison. <code>===</code> checks if it’s literally the same object.</p>
+</blockquote>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="/docs/guides/actions/">Actions</a> — when a mutation needs business logic</li>
+<li><a href="/docs/guides/computed-properties/">Computed Properties</a> — derived values from state</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
