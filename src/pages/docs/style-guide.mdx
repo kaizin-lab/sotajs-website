@@ -1,0 +1,440 @@
+---
+title: "Style Guide"
+description: "Recommended patterns and best practices for writing @sotajs/ddd code"
+layout: ../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - Rules that prevent bugs (Essential)
+> - Rules that improve readability (Recommended)
+> - Conventions for consistency (Suggested)
+
+This is the official style guide for `@sotajs/ddd`. It lists our recommended patterns
+and best practices. You're encouraged to follow them — but take time to evaluate
+your own situation. No style guide fits all projects.
+
+## Rule Categories
+
+### Priority A: Essential
+
+**These rules prevent errors.** Learn them and follow them at all costs.
+Exceptions should be extremely rare and made only with deep understanding
+of both TypeScript and DDD.
+
+### Priority B: Recommended
+
+**These rules improve readability and developer experience.** Your code will
+still run if you violate them, but violations should be rare and well-justified.
+
+### Priority C: Suggested
+
+**Where multiple equally good options exist, we suggest a default.** Feel free
+to make a different choice — as long as you're consistent and have a good reason.
+
+---
+
+## Priority A Rules: Essential
+
+### Do Not Put an id in Value Objects
+
+**ESSENTIAL**
+
+Value Objects are defined by their attributes, not by identity. Adding an `id`
+breaks structural equality:
+
+❌ **Bad:**
+
+```ts
+const MoneySchema = z.object({
+  id: z.string(),    // ❌ value objects don't have identity
+  amount: z.number(),
+  currency: z.string(),
+});
+
+const a = Money.create({ id: 'abc', amount: 100, currency: 'USD' });
+const b = Money.create({ id: 'xyz', amount: 100, currency: 'USD' });
+a.equals(b); // false — different ids, same value
+```
+
+✅ **Good:**
+
+```ts
+const MoneySchema = z.object({
+  amount: z.number(),
+  currency: z.string(),
+});
+// No id field — equality is structural
+```
+
+> If the concept has identity and changes over time, it's an Entity. Use `createEntity`.
+
+---
+
+### Do Not Validate Domain Rules Outside the Entity
+
+**ESSENTIAL**
+
+Domain rules belong inside actions, not in controllers or services. When you
+validate outside, every caller must duplicate the check:
+
+❌ **Bad:**
+
+```ts
+// Controller:
+if (!user.props.emailVerified) {
+  throw new BadRequestException('Verify email first');
+}
+user.actions.deactivate();
+```
+
+✅ **Good:**
+
+```ts
+// Inside the entity:
+actions: {
+  deactivate(state) {
+    if (!state.emailVerified) throw new Error('Must verify email first');
+    state.status = 'inactive';
+  },
+}
+
+// Controller — just call the action:
+user.actions.deactivate();
+```
+
+> The entity should protect its own invariants. Callers shouldn't need to know
+> preconditions. If the action isn't safe to call in the current state, it should throw.
+
+---
+
+### Do Not Use === for Entity Comparison
+
+**ESSENTIAL**
+
+Entities compare by identity (`id`), not by object reference:
+
+❌ **Bad:**
+
+```ts
+const a = User.create({ id: 'abc', username: 'alice' });
+const b = User.create({ id: 'abc', username: 'alice' });
+
+if (a === b) { ... }       // false — different object references
+if (a.props === b.props) { ... } // false — different frozen snapshots
+```
+
+✅ **Good:**
+
+```ts
+if (a.equals(b)) { ... }   // true — same id
+```
+
+> `.equals()` compares `this.props.id === other.props.id`. Use it for all entity
+> comparisons. `===` checks object identity, which is never what you want for entities.
+
+---
+
+### Do Not Use a Raw string for Entity IDs
+
+**ESSENTIAL**
+
+Raw `string` IDs are interchangeable — `UserId` fits where `OrderId` is expected.
+Use `createBrandedId` to make them distinct types:
+
+❌ **Bad:**
+
+```ts
+function getUser(id: string) { ... }
+function getOrder(id: string) { ... }
+
+getUser(orderId);   // compiles — runtime bug
+```
+
+✅ **Good:**
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+const OrderId = createBrandedId({ brand: 'OrderId', schema: z.string().uuid() });
+
+function getUser(id: UserId) { ... }
+function getOrder(id: OrderId) { ... }
+
+getUser(orderId);   // TypeScript error
+```
+
+> BrandedId is a string at runtime — zero overhead. The safety is purely at compile time,
+> which is exactly where these bugs live.
+
+---
+
+## Priority B Rules: Recommended
+
+### Do Not Write Actions That Only Assign a Single Field
+
+**RECOMMENDED**
+
+Auto-setters already exist for every Zod field. An action that does a single
+assignment is noise:
+
+❌ **Bad:**
+
+```ts
+actions: {
+  updateBio(state, bio: string) { state.bio = bio; },
+  setName(state, name: string) { state.name = name; },
+  toggleVerified(state) { state.emailVerified = !state.emailVerified; },
+}
+```
+
+✅ **Good:**
+
+```ts
+// Delete the actions above. Auto-setters already exist:
+user.actions.setBio('new bio');
+user.actions.setName('alice');
+user.actions.setEmailVerified(true);
+```
+
+> **Exception:** If the setter needs validation beyond Zod (e.g., `bio` must not
+> contain URLs), write an action with a guard clause. The rule is: body of one
+> assignment → delete. Guard clause, multi-field change, or event → keep.
+
+---
+
+### Do Not Use createAggregate Without Invariants
+
+**RECOMMENDED**
+
+Aggregate's only reason to exist over Entity is the `invariants` guarantee.
+An empty `invariants` array means you should use `createEntity`:
+
+❌ **Bad:**
+
+```ts
+const User = createAggregate({
+  name: 'User',
+  schema: UserSchema,
+  invariants: [],   // empty — no cross-field rules
+  actions: { ... },
+});
+```
+
+✅ **Good:**
+
+```ts
+const User = createEntity({
+  schema: UserSchema,
+  actions: { ... },
+});
+// Simpler, and you get auto-setters.
+```
+
+> **Exception:** You plan to add invariants soon and want the Aggregate structure
+> in place. But add at least one invariant before committing — an empty array
+> compiles but gives zero protection.
+
+---
+
+### Keep Invariants Synchronous
+
+**RECOMMENDED**
+
+Invariants run on `.create()` and after every action. Async work here blocks
+the entire mutation pipeline:
+
+❌ **Bad:**
+
+```ts
+invariants: [
+  async (props) => {
+    const exists = await db.count({ where: { email: props.email } });
+    if (exists) throw new Error('Email taken');
+  },
+]
+```
+
+✅ **Good:**
+
+```ts
+// In the use case:
+const exists = await repo.findByEmail(email);
+if (exists) throw new ConflictError('Email taken');
+const user = User.create({ id, email, ... });
+```
+
+> Uniqueness checks, existence validation, and other external queries belong
+> in the use case — before entity creation. Invariants validate the entity's
+> own state, not the outside world.
+
+---
+
+### Do Not Return Domain Events from Entity Actions
+
+**RECOMMENDED**
+
+Domain events are an Aggregate concern. Entity doesn't have an event queue:
+
+❌ **Bad:**
+
+```ts
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    verifyEmail(state) {
+      state.emailVerified = true;
+      return { event: { ... } }; // ❌ Entity doesn't collect events
+    },
+  },
+});
+```
+
+✅ **Good:**
+
+```ts
+// Use Aggregate if you need domain events:
+const User = createAggregate({
+  name: 'User',
+  schema: UserSchema,
+  invariants: [/* ... */],
+  actions: {
+    verifyEmail(state) {
+      state.emailVerified = true;
+      return { event: { aggregateId: state.id, timestamp: new Date() } };
+    },
+  },
+});
+
+const events = user.getPendingEvents();
+```
+
+> Entity is for identity + behavior. Aggregate adds invariants + events.
+> If you need events, you need an Aggregate.
+
+---
+
+### Do Not Put I/O or Async Work in Computed Properties
+
+**RECOMMENDED**
+
+Computed properties run on every access. A network call here means your entity
+makes HTTP requests when you read a property:
+
+❌ **Bad:**
+
+```ts
+computed: {
+  avatarUrl(props) {
+    return s3.getSignedUrl(props.avatarKey); // ❌ every access → HTTP call
+  },
+}
+```
+
+✅ **Good:**
+
+```ts
+// In the use case:
+const avatarUrl = await s3.getSignedUrl(user.props.avatarKey);
+return { user, avatarUrl };
+```
+
+> Computed is for synchronous derivation from props. I/O, async, and heavy
+> computation belong in the use case.
+
+---
+
+## Priority C Rules: Suggested
+
+### Name Actions as Verbs in Domain Language
+
+**SUGGESTED**
+
+Use domain verbs, not CRUD verbs:
+
+✅ **Prefer:**
+
+```ts
+actions: {
+  verifyEmail(state) { ... },    // domain verb
+  deactivate(state) { ... },     // domain verb
+  transferOwnership(state) { ... }, // domain verb
+  ship(state) { ... },           // domain verb
+}
+```
+
+❌ **Avoid:**
+
+```ts
+actions: {
+  setEmailVerified(state) { ... }, // CRUD — use auto-setter instead
+  updateStatus(state) { ... },     // CRUD — what does "update" mean?
+  changeOwner(state) { ... },      // vague — "transferOwnership" is precise
+}
+```
+
+> The action name should tell you what business operation happened.
+> If the name is just `setField`, use the auto-setter.
+
+---
+
+### Place One Entity/Aggregate Per File
+
+**SUGGESTED**
+
+```
+src/domain/
+  user/
+    user.entity.ts
+    user.repository.ts
+  order/
+    order.aggregate.ts
+    order-item.entity.ts
+    order.repository.ts
+  shared/
+    money.vo.ts
+    user-id.brand.ts
+```
+
+> Following the convention of "one domain concept per file" keeps imports
+> predictable. The alternative (multiple entities per file) is acceptable
+> for small domains where entities are closely related.
+
+---
+
+### Use the Narrowest Zod Schema Possible
+
+**SUGGESTED**
+
+The narrower the schema, the fewer invalid values slip through:
+
+✅ **Prefer:**
+
+```ts
+z.string().uuid()        // not z.string()
+z.number().positive()    // not z.number()
+z.enum(['USD', 'EUR'])   // not z.string()
+z.string().email()       // not z.string()
+```
+
+> Zod validates at `.create()` — use it. An `email` field that accepts
+> `'notanemail'` is a bug waiting to happen. The schema is your first
+> line of defense.
+
+---
+
+## What you've learned
+
+**Priority A rules prevent bugs.** No `id` in Value Objects, no external
+validation of domain rules, no `===` for entity comparison, no raw `string`
+for entity IDs. Violate these and your domain model has holes.
+
+**Priority B rules keep code clean.** No trivial actions, no empty invariants,
+no async invariants, no events in Entity, no I/O in computed. Violate these
+and your code works but becomes harder to maintain.
+
+**Priority C rules ensure consistency.** Domain verbs for action names,
+one concept per file, narrow Zod schemas. Violate these and your code
+works fine — but your team will thank you for consistency.
+
+## Next
+
+→ [API Reference](/docs/api/entity/) — full config reference for every function
