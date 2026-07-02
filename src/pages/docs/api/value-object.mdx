@@ -1,113 +1,126 @@
 ---
 title: "Value Object"
-description: "createValueObject — structural equality, immutable props, computed values"
+description: "createValueObject — structural equality, immutable props, optional actions"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
 ## `createValueObject(config)`
 
-Creates a **Value Object** class — objects defined by their attributes,
-not by identity. Two Value Objects with identical props are equal.
-
-### Signature
+Creates a **Value Object** — an object defined by its attributes, not by identity.
+Two Value Objects with identical props are equal. Props are frozen — immutable from the outside.
 
 ```ts
-function createValueObject<
-  TProps,
-  TActions extends Record<string, (state: TProps, ...args: any[]) => void> = {},
-  TComputed extends Record<string, (state: TProps) => any> = {},
->(config: ValueObjectConfig<TProps, TActions, TComputed>): ValueObjectClass
+import { z } from 'zod';
+import { createValueObject } from '@sotajs/ddd';
+
+const MoneySchema = z.object({
+  amount: z.number(),
+  currency: z.string().length(3),
+});
+type MoneyProps = z.infer<typeof MoneySchema>;
+
+const Money = createValueObject({
+  schema: MoneySchema,
+  actions: {
+    add(state, other: MoneyProps) {
+      if (state.currency !== other.currency)
+        throw new Error('Currency mismatch');
+      state.amount += other.amount;
+    },
+  },
+  computed: {
+    formatted(state) {
+      return `${state.amount} ${state.currency}`;
+    },
+  },
+});
+type Money = ReturnType<typeof Money.create>;
+
+const a = Money.create({ amount: 100, currency: 'USD' });
+const b = Money.create({ amount: 100, currency: 'USD' });
+a.equals(b); // true — same attributes
+
+a.actions.add({ amount: 50, currency: 'USD' });
+a.formatted; // '150 USD'
 ```
 
-### Config
+> `equals()` uses `JSON.stringify` comparison — structural, not referential.
+> Two instances created at different times with the same data are equal.
+> [Source: value-object.ts:101-103](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/value-object.ts)
 
-| Property | Type | Description |
+---
+
+## Config
+
+| Field | Required | Description |
 |---|---|---|
-| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
-| `actions` | `Record<string, (draft, ...args) => void>` | Optional. Domain actions that produce a new state. |
-| `computed` | `Record<string, (props) => any>` | Derived getters. |
+| `schema` | No* | Zod/Valibot schema. |
+| `type` | No* | ArkType type. |
+| `validate` | No* | Generic validate function. |
+| `actions` | No | Optional. Domain actions that mutate a draft copy of state. |
+| `computed` | No | Derived getters. |
 
-### Returned Class
+> *One of `schema`, `type`, or `validate` is required.
+
+---
+
+## Instance API
 
 | Member | Type | Description |
 |---|---|---|
-| `VO.create(data)` | `ValueObject` | Static factory. Validates input. |
+| `VO.create(data)` | ValueObject instance | Validates and creates. |
 | `vo.props` | `Readonly<TProps>` | Frozen snapshot of current state. |
 | `vo.actions.*` | `(...args) => void` | Action methods (if configured). |
-| `vo.equals(other)` | `boolean` | Structural equality — compares JSON of props. |
+| `vo.equals(other)` | `boolean` | Structural equality via JSON comparison. |
 
-### Example
+---
+
+## Structural equality
 
 ```ts
-import { createValueObject } from "@sotajs/ddd";
+const a = Money.create({ amount: 100, currency: 'USD' });
+const b = Money.create({ amount: 100, currency: 'USD' });
+const c = Money.create({ amount: 200, currency: 'USD' });
 
-const Money = createValueObject({
-  validate: (data) => {
-    const d = data as Record<string, unknown>;
-    if (typeof d.amount !== "number") throw new Error("amount must be number");
-    if (d.amount < 0) throw new Error("amount must be ≥ 0");
-    return { amount: d.amount, currency: d.currency as string };
-  },
-
-  actions: {
-    add: (draft, other: { amount: number; currency: string }) => {
-      if (draft.currency !== other.currency) throw new Error("Currency mismatch");
-      draft.amount += other.amount;
-    },
-  },
-
-  computed: {
-    formatted: (state) => `${state.amount} ${state.currency}`,
-  },
-});
-
-const a = Money.create({ amount: 100, currency: "USD" });
-const b = Money.create({ amount: 100, currency: "USD" });
-const c = Money.create({ amount: 200, currency: "USD" });
-
-console.log(a.equals(b)); // true  — same attributes
-console.log(a.equals(c)); // false — different amount
-
-a.actions.add({ amount: 50, currency: "USD" });
-console.log(a.props.amount);  // 150
-console.log(a.formatted);     // "150 USD"
-
-// Currency mismatch throws
-// a.actions.add({ amount: 50, currency: "EUR" });
+a.equals(b); // true
+a.equals(c); // false
 ```
 
-### Structural Equality
+> Equality uses `JSON.stringify`. This means property order matters,
+> `undefined` values are stripped, and `Date`/`BigInt` objects may
+> behave unexpectedly. For most Value Objects this is sufficient.
+> If you need custom equality, implement it outside the VO.
 
-Value Objects use `JSON.stringify` for equality comparison. This means:
+---
 
-- Property order in objects matters
-- `undefined` values are stripped by `JSON.stringify`
-- Functions and Symbols are ignored
+## Actions are optional
 
-For most Value Objects this is sufficient. If you need custom equality logic,
-implement it outside the VO.
-
-### Actions Are Optional
-
-Actions on Value Objects are less common than on Entities. A Value Object
-without actions is perfectly valid:
+A Value Object without actions is perfectly valid:
 
 ```ts
 const Point = createValueObject({
-  validate: (data) => {
-    const d = data as Record<string, unknown>;
-    return { x: d.x as number, y: d.y as number };
-  },
+  schema: z.object({ x: z.number(), y: z.number() }),
 });
 
 const p = Point.create({ x: 1, y: 2 });
-// p.actions is an empty object
+// p.actions is an empty object — no mutation surface
 ```
 
-### Pitfalls
+---
 
-- **Equality uses JSON.** If your Value Object contains `Date`, `BigInt`,
-  or circular references, `equals()` will behave unexpectedly.
-- **No identity.** Value Objects don't have an `id` — they are their attributes.
-- **Immutability.** Props are frozen. To "change" a VO, produce a new instance
-  or use an action that mutates the internal state.
+## Value Object vs Entity
+
+| | Entity | Value Object |
+|---|---|---|
+| **Identity** | Has `id` — equality by identity | No `id` — equality by attributes |
+| **Mutability** | Mutable through actions | Mutable through optional actions |
+| **Use case** | "A specific user" | "An amount of money" |
+| **`equals()`** | Compares `id` | Compares all attributes |
+
+---
+
+## Pitfalls
+
+- **Equality is JSON-based.** Dates become strings, BigInt breaks, property order matters.
+- **No nominal distinction.** Two Value Objects with identical shapes are TypeScript-compatible. Use branded types if you need `Email ≠ Username` at compile time.
+- **Props are frozen.** To "change" a VO, use an action (which mutates a draft copy internally).

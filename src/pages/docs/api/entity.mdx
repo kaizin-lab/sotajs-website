@@ -1,94 +1,149 @@
 ---
 title: "Entity"
-description: "createEntity — objects with identity, mutable state, and enforced actions"
+description: "createEntity — objects with identity, typed actions, and computed properties"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
 ## `createEntity(config)`
 
-Creates an **Entity** class — the primary DDD building block for objects with
-a distinct identity (`id`) and mutable state that can only be changed through
-defined actions.
-
-### Signature
+Creates an **Entity** — an object with a unique identity (`id`), mutable state changed only through
+defined actions, and computed (derived) properties.
 
 ```ts
-function createEntity<
-  TProps extends { id: string },
-  TActions extends Record<string, (props: TProps, ...args: any[]) => void>,
-  TComputed extends Record<string, (props: TProps) => any> = {},
->(config: EntityConfig<TProps, TActions, TComputed>): EntityClass
+import { z } from 'zod';
+import { createEntity } from '@sotajs/ddd';
+
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+});
+
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    updateBio(state, bio: string) { state.bio = bio; },
+  },
+  computed: {
+    displayName(props) { return props.username; },
+  },
+});
+type User = ReturnType<typeof User.create>;
+
+const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice' });
+user.actions.updateBio('new bio');
+console.log(user.displayName); // 'alice'
 ```
 
-### Config
+> **How does `displayName` work?** It's a getter defined on the entity prototype.
+> Each computed key becomes a property — not a function call. Defined once
+> in config, reads like native data. Recalculates from current props on every access.
+> [Source: entity.ts](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
 
-| Property | Type | Description |
+---
+
+## Config
+
+| Field | Required | Description |
 |---|---|---|
-| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
-| `actions` | `Record<string, (draft: TProps, ...args) => void>` | Domain actions that mutate a mutable draft of props. |
-| `computed` | `Record<string, (props: TProps) => any>` | Derived getters available as properties on the entity. |
+| `schema` | No* | Zod/Valibot schema — `.parse()` interface. Provides type inference + auto-setters. |
+| `type` | No* | ArkType type — callable. Fastest validation path. |
+| `validate` | No* | Generic `(data: unknown) => TProps`. Use with any validator or plain function. |
+| `actions` | **Yes** | Named operations that mutate state. First argument is a mutable draft. |
+| `computed` | No | Derived getters. Each key becomes a property on the entity instance. |
 
-### Returned Class
+> *One of `schema`, `type`, or `validate` is required. Pick the one that matches your validator.
+
+---
+
+## Instance API
 
 | Member | Type | Description |
 |---|---|---|
-| `Entity.create(data)` | `Entity` | Static factory. Validates input, returns instance. |
+| `Entity.create(data)` | Entity instance | Static factory. Validates input through schema/type/validate, returns entity. |
 | `entity.id` | `string` | The entity's identity. |
 | `entity.props` | `Readonly<TProps>` | Frozen snapshot of current state. |
-| `entity.state` | `Readonly<TProps>` | **Deprecated.** Use `.props`. |
 | `entity.actions.*` | `(...args) => void` | Action methods. Each mutates state through a shallow copy. |
 | `entity.equals(other)` | `boolean` | Identity comparison by `id`. |
 
-### Auto-setters
+---
 
-For every non-`id` property in the validated shape, an auto-setter is generated
-(`setName`, `setEmail`, etc.) — **if** the validator accepts `{ id: "any" }`.
-Strict validators that require all fields will skip auto-setters.
+## How state mutation works
 
-### Example
+When you call an action, the library:
+
+1. Reads current state from an internal `WeakMap`
+2. Creates a **shallow copy** (`{ ...current }`)
+3. Passes the copy to your action function — you mutate it freely
+4. Checks invariants (only on Aggregate)
+5. Writes the copy back to the `WeakMap`
 
 ```ts
-import { createEntity } from "@sotajs/ddd";
-
-const User = createEntity({
-  validate: (data) => {
-    const d = data as Record<string, unknown>;
-    if (typeof d.id !== "string") throw new Error("id required");
-    return {
-      id: d.id,
-      name: (d.name as string) ?? "Unknown",
-      email: d.email as string | undefined,
-    };
-  },
-
-  actions: {
-    rename: (draft, newName: string) => {
-      draft.name = newName;
-    },
-  },
-
-  computed: {
-    displayName: (props) => `${props.name} <${props.email ?? "no email"}>`,
-  },
-});
-
-const u = User.create({ id: "1", name: "Alice", email: "a@test.com" });
-
-u.actions.rename("Alicia");
-console.log(u.props.name);          // "Alicia"
-console.log(u.displayName);         // "Alicia <a@test.com>" (computed)
-
-// Props are frozen
-// u.props.name = "hack"; // throws TypeError in strict mode
-
-// Identity equality
-const u2 = User.create({ id: "1", name: "Bob" });
-console.log(u.equals(u2));  // true
+// Your action
+updateBio(state, bio: string) {
+  state.bio = bio; // mutating a draft copy
+}
+// The library swaps the draft in — atomic from your perspective
 ```
 
-### Pitfalls
+> State never lives on `this`. It's stored in a `WeakMap` keyed by the entity instance.
+> No public fields, no accidental exposure through iteration or logging.
+> [Source: entity.ts:152-217](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
 
-- **Computed values are not cached.** They recalculate on every access.
-- **`validate` must be synchronous.** Async validation is not supported.
-- **Auto-setters skip when validator rejects `{ id: "any" }`.** Define explicit setters in `actions` for strict validators.
-- **State is shallow-copied.** Nested objects (arrays, sub-objects) within props share references with the draft during mutation. Freeze them yourself if you need deep immutability for nested structures.
+---
+
+## Why can't I mutate `props` directly?
+
+```ts
+user.props.bio = 'x'; // TypeError: Cannot assign to read only property
+```
+
+> `props` returns `deepFreeze({ ...current })` — a recursively frozen copy.
+> Every read creates a new snapshot. The original state is untouched.
+> This is not a convention — it's a physical constraint of the runtime.
+> [Source: entity.ts:112-115](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
+
+---
+
+## Auto-setters
+
+For every non-`id` field in your schema, the library generates a `setField(value)` method:
+
+```ts
+// Schema: { id, username, bio }
+user.actions.setUsername('new-name'); // generated automatically
+user.actions.setBio('new-bio');       // generated automatically
+```
+
+> How? The library introspects `schema.shape` at definition time.
+> Every key except `id` gets a setter. For ArkType or `validate` callbacks,
+> auto-setters are discovered by calling `validate({ id: "any" })` and
+> inspecting the returned keys. [Source: entity.ts:83-124](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
+
+---
+
+## Validator-agnostic
+
+Three equivalent ways to define the same entity:
+
+```ts
+// Zod / Valibot
+createEntity({ schema: z.object({ id: z.string(), name: z.string() }), actions: {...} })
+
+// ArkType
+createEntity({ type: type({ id: 'string', name: 'string' }), actions: {...} })
+
+// Plain function
+createEntity({ validate: (data: unknown) => data as { id: string; name: string }, actions: {...} })
+```
+
+> The library only cares that your validator has a `.parse()` method (schema),
+> is callable (type), or is a function (validate). Everything else is your choice.
+
+---
+
+## Pitfalls
+
+- **Computed values are not cached.** They recalculate on every access. Keep them fast.
+- **State is shallow-copied during actions.** If your state has nested objects, the draft shares references with the original for unchanged properties. `deepFreeze` on `.props` prevents external mutation.
+- **Auto-setters skip when `validate({ id: "any" })` throws.** Define explicit setters in `actions` for strict validators.

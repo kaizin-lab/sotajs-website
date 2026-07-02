@@ -1,0 +1,184 @@
+---
+title: "ORM Integration"
+description: "How to use @sotajs/ddd with Prisma, Drizzle, and Knex — repository patterns and honest limitations"
+layout: ../../layouts/DocsLayout.astro
+---
+
+`@sotajs/ddd` is ORM-agnostic. It doesn't know about your database — and that's intentional.
+The domain layer produces rich objects; the infrastructure layer persists them.
+A repository is the bridge: two lines of mapping.
+
+---
+
+## The pattern (same for every ORM)
+
+```ts
+// Load: raw data → domain object
+const row = await db.whatever.findUnique({ where: { id } });
+const entity = Entity.create(row);
+
+// Save: domain object → raw data
+await db.whatever.upsert({
+  where: { id: entity.id },
+  create: { ...entity.props },
+  update: { ...entity.props },
+});
+```
+
+That's it. Two lines of mapping. The library handles validation on `.create()`.
+Your ORM handles persistence. The repository is the glue.
+
+---
+
+## Prisma
+
+```ts
+// order.repository.ts
+import { prisma } from './db';
+import { Order } from './order.aggregate';
+
+export const orderRepository = {
+  async findById(id: string) {
+    const row = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true, customerInfo: true },
+    });
+    return row ? Order.create(row) : null;
+  },
+
+  async save(order: Order) {
+    const data = order.props; // dehydrated — nested entities are plain objects
+    await prisma.order.upsert({
+      where: { id: order.id },
+      create: data as any,
+      update: data as any,
+    });
+  },
+};
+```
+
+> Prisma's generated types and `@sotajs/ddd` types are separate.
+> The schema defines the database shape; `z.object()` defines the domain shape.
+> They can be slightly different — the domain model might have computed fields
+> that don't exist in the DB, or omit persistence-only columns.
+
+---
+
+## Drizzle
+
+```ts
+// order.repository.ts
+import { db } from './db';
+import { orders, orderItems } from './schema';
+import { Order } from './order.aggregate';
+import { eq } from 'drizzle-orm';
+
+export const orderRepository = {
+  async findById(id: string) {
+    const row = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: { items: true, customerInfo: true },
+    });
+    return row ? Order.create(row) : null;
+  },
+
+  async save(order: Order) {
+    const data = order.props;
+    await db
+      .insert(orders)
+      .values(data as any)
+      .onConflictDoUpdate({ target: orders.id, set: data as any });
+  },
+};
+```
+
+> Drizzle returns plain objects — ideal for `.create()`. No type conflicts.
+> Drizzle's schema and Zod schema can coexist; the domain model is the source of truth.
+
+---
+
+## Knex (raw SQL)
+
+```ts
+// order.repository.ts
+import { db } from './db';
+import { Order } from './order.aggregate';
+
+export const orderRepository = {
+  async findById(id: string) {
+    const rows = await db('orders').where({ id }).select('*');
+    if (!rows.length) return null;
+    const items = await db('order_items').where({ orderId: id }).select('*');
+    return Order.create({ ...rows[0], items });
+  },
+
+  async save(order: Order) {
+    const { items, ...orderData } = order.props as any;
+    await db.transaction(async (trx) => {
+      await trx('orders').insert(orderData).onConflict('id').merge();
+      await trx('order_items').where({ orderId: order.id }).del();
+      if (items?.length) await trx('order_items').insert(items);
+    });
+  },
+};
+```
+
+> Knex has no types. You map manually — which is where `@sotajs/ddd` shines:
+> `.create()` validates the raw data and returns a typed entity.
+
+---
+
+## TypeORM / MikroORM
+
+**Decorator-based ORMs are structurally incompatible with `@sotajs/ddd`.**
+
+`createEntity` returns a dynamically generated class from a factory function.
+TypeORM and MikroORM require decorators (`@Entity()`, `@Column()`) on explicit
+class properties. These paradigms don't mix.
+
+If you're on TypeORM, you have two options:
+
+1. **Don't use the library.** Add methods directly to your TypeORM entities.
+   TypeORM entities can already have behaviour — `@sotajs/ddd` doesn't add value here.
+
+2. **Use the library with a separate domain class.** Keep TypeORM entities as
+   persistence DTOs. Map between them and `@sotajs/ddd` domain objects in the repository.
+   This is architecturally clean but doubles your class count.
+
+```ts
+// Hybrid approach (not recommended for most projects):
+const ormOrder = await typeOrmRepo.findOne({ where: { id } });
+const domainOrder = Order.create({
+  id: ormOrder.id,
+  status: ormOrder.status,
+  items: ormOrder.items.map(i => ({ productId: i.productId, ... })),
+});
+```
+
+---
+
+## Compatibility table
+
+| ORM | Status | Notes |
+|---|---|---|
+| **Prisma** | ✅ Works | Schema-first. Generated types are plain objects. Map with `Entity.create(row)`. |
+| **Drizzle** | ✅ Works | SQL-builder. Returns plain objects. Ideal fit. |
+| **Knex** | ✅ Works | Raw SQL. No types — library adds validation. |
+| **Kysely** | ✅ Works | Typed SQL-builder. Returns plain objects. Same as Knex. |
+| **TypeORM** | ❌ Incompatible | Decorators on classes. Structural conflict with factory pattern. |
+| **MikroORM** | ❌ Incompatible | Same reason — decorator-based. |
+| **Mongoose** | ⚠️ Possible | Schema-based but returns Mongoose documents, not plain objects. Map with `.toObject()`. |
+
+---
+
+## Why no built-in repository abstraction?
+
+Repository is an **infrastructure** concern. Different ORMs have different APIs,
+different transaction models, different query patterns. A one-size-fits-all
+repository interface would either be too generic (useless) or too specific
+(forcing one ORM's pattern on others).
+
+The library provides the domain layer. You write the repository — two lines
+of mapping that fit your ORM and your project's conventions.
+
+> See also: [What we don't cover](/docs/what-we-dont-cover/)

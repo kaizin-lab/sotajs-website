@@ -6,144 +6,190 @@ layout: ../../../layouts/DocsLayout.astro
 
 ## `createAggregate(config)`
 
-Creates an **Aggregate** class — the transactional consistency boundary in DDD.
-Aggregates enforce invariants on every mutation, hydrate nested entities,
-and collect domain events for later dispatching.
-
-### Signature
+Creates an **Aggregate** — the transactional consistency boundary in DDD.
+Aggregates enforce invariants on every mutation, hydrate nested entities
+into rich objects, and collect domain events.
 
 ```ts
-function createAggregate<
-  TProps extends { id: string },
-  TEntities extends EntitiesMap<TProps>,
-  TActions extends Record<string, (props: HydratedProps<TProps, TEntities>, ...args: any[]) => any>,
-  TComputed extends Record<string, (props: HydratedProps<TProps, TEntities>) => any> = {},
->(config: AggregateConfig<TProps, TEntities, TActions, TComputed>): AggregateClass
+import { z } from 'zod';
+import { createAggregate, createEntity } from '@sotajs/ddd';
+
+const OrderItemSchema = z.object({
+  productId: z.string().uuid(),
+  quantity: z.number().positive(),
+  price: z.number().positive(),
+});
+const OrderItem = createEntity({ schema: OrderItemSchema, actions: {} });
+
+const OrderSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['pending', 'confirmed', 'shipped']),
+  amountPaid: z.number(),
+  items: z.array(OrderItemSchema),
+});
+const Order = createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  entities: { items: OrderItem },
+  invariants: [
+    (props) => {
+      if (props.status === 'confirmed' && props.amountPaid === 0)
+        throw new Error('Cannot confirm unpaid order');
+    },
+  ],
+  actions: {
+    confirm(state) { state.status = 'confirmed'; },
+  },
+});
+type Order = ReturnType<typeof Order.create>;
 ```
 
-### Config
+> `invariants` is **required**. TypeScript won't compile without it.
+> Invariants run at `.create()` and after every action. You cannot forget them.
+> [Source: aggregate.ts:33-56](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts)
 
-| Property | Type | Description |
+---
+
+## Config
+
+| Field | Required | Description |
 |---|---|---|
-| `name` | `string` | Human-readable name for debugging. |
-| `validate` | `(data: unknown) => TProps` | Validates raw input. Returns typed props or throws. |
-| `entities` | `Record<string, EntityClass>` | Entity factories to hydrate nested data into entity instances. |
-| `invariants` | `Array<(props) => void>` | Checked on creation and after every action. Throw on violation. |
-| `actions` | `Record<string, (draft, ...args) => any>` | Domain actions. Return `{ event }` to record a domain event. |
-| `computed` | `Record<string, (props) => any>` | Derived getters. |
+| `name` | **Yes** | Human-readable name. Used in error messages and debugging. |
+| `schema` | No* | Zod/Valibot schema — `.parse()` interface. |
+| `type` | No* | ArkType type — callable, fastest path. |
+| `validate` | No* | Generic `(data: unknown) => TProps`. |
+| `entities` | No | Map of property keys to Entity factories. Nested data is auto-hydrated into entity instances. |
+| `invariants` | **Yes** | Array of `(props) => void`. Each must throw on violation. Checked on create and every action. |
+| `actions` | **Yes** | Named operations. Can return `{ event }` to record a domain event. |
+| `computed` | No | Derived getters — same as Entity. |
 
-### Returned Class
+> *One of `schema`, `type`, or `validate` is required.
+
+---
+
+## Instance API
 
 | Member | Type | Description |
 |---|---|---|
-| `Aggregate.create(data)` | `Aggregate` | Static factory. Validates, hydrates entities, checks invariants. |
+| `Aggregate.create(data)` | Aggregate instance | Validates, hydrates entities, checks invariants. |
 | `aggregate.id` | `string` | The aggregate root's identity. |
-| `aggregate.props` | `Readonly<TProps>` | Frozen, dehydrated snapshot (entities unwrapped to raw props). |
-| `aggregate.state` | `Readonly<TProps>` | **Deprecated.** Use `.props`. |
-| `aggregate.actions.*` | `(...args) => void` | Action methods. Each runs through invariant checks post-mutation. |
+| `aggregate.props` | `Readonly<TProps>` | Frozen, dehydrated snapshot (entities unwrapped to raw data). |
+| `aggregate.actions.*` | `(...args) => any` | Action methods. Invariants run after each. Can return `{ event }`. |
 | `aggregate.getPendingEvents()` | `IDomainEvent[]` | Collects and clears pending domain events. |
 | `aggregate.clearEvents()` | `void` | Discards pending events without reading. |
 
-### Domain Events
+---
 
-Actions can return `{ event }` to record a domain event:
+## Invariants
+
+Invariants run **twice**: at `.create()` and after every action. They are synchronous
+functions that receive the aggregate's props and throw on violation.
 
 ```ts
-actions: {
-  ship: (draft) => {
-    draft.status = "shipped";
-    return { event: { aggregateId: draft.id, timestamp: new Date() } };
+invariants: [
+  (props) => {
+    if (props.items.length === 0)
+      throw new Error('Order must have at least one item');
   },
-}
+  (props) => {
+    if (props.status === 'shipped' && !props.trackingId)
+      throw new Error('Shipped orders must have a tracking ID');
+  },
+],
 ```
 
-Events are collected internally. Call `getPendingEvents()` after your
-use case to retrieve and clear them. Dispatch them to your message bus,
-event store, or outbox pattern.
+> All invariants run after **every** action — not just the "relevant" ones.
+> Keep them fast: no I/O, no async, no network calls. They are pure validation.
+> [Source: aggregate.ts:207-209](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts)
 
-### Nested Entities
+---
 
-When an aggregate contains sub-entities (e.g., `Order` contains `OrderItem` entities),
-declare them in the `entities` map:
+## Nested Entities
 
-```ts
-const Order = createAggregate({
-  entities: {
-    items: OrderItemEntity,  // Entity factory
-  },
-  // ...
-});
-```
-
-On creation, nested data matching entity keys is automatically hydrated
-through `Entity.create()`. On `.props` read, entities are dehydrated back
-to raw data.
-
-### Example
+When an aggregate contains sub-entities, declare them in `entities`:
 
 ```ts
-import { createAggregate } from "@sotajs/ddd";
-
-const Order = createAggregate({
-  name: "Order",
-  validate: (data) => {
-    const d = data as Record<string, unknown>;
-    return {
-      id: d.id as string,
-      customerId: d.customerId as string,
-      items: (d.items as any[]) ?? [],
-      status: "pending" as const,
-    };
-  },
-
-  invariants: [
-    (props) => {
-      if (props.items.length === 0) throw new Error("Must have ≥ 1 item");
-    },
-    (props) => {
-      if (props.items.some((i: any) => i.quantity <= 0))
-        throw new Error("Quantities must be positive");
-    },
-  ],
-
+const CustomerInfo = createEntity({
+  schema: z.object({ name: z.string(), email: z.string().email() }),
   actions: {
-    addItem: (draft, item) => {
-      draft.items.push(item);
-    },
-    ship: (draft) => {
-      if (draft.status !== "pending") throw new Error("Already shipped");
-      draft.status = "shipped";
-      return {
-        event: { aggregateId: draft.id, timestamp: new Date() },
-      };
-    },
+    updateName(state, name: string) { state.name = name; },
   },
+});
 
-  computed: {
-    itemCount: (props) => props.items.length,
-  },
+const Order = createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  entities: { customerInfo: CustomerInfo },
+  invariants: [...],
+  actions: {...},
 });
 
 const order = Order.create({
-  id: "o1",
-  customerId: "c1",
-  items: [{ productId: "p1", quantity: 2 }],
+  id: '...',
+  customerInfo: { name: 'Alice', email: 'a@test.com' },
 });
 
-order.actions.addItem({ productId: "p2", quantity: 1 });
-order.actions.ship();
-
-// Invariant violation:
-// order.actions.ship(); // throws "Already shipped"
-
-const events = order.getPendingEvents();
-// events.length === 1, events cleared after read
+// customerInfo is a real entity instance, not a plain object:
+order.state.customerInfo.actions.updateName('Alicia');
 ```
 
-### Pitfalls
+> On creation, `CustomerInfo.create(rawData)` is called automatically.
+> On `.props` read, entities are dehydrated back to plain objects
+> (for clean serialization). On `.state` read, entities stay hydrated.
+> [Source: aggregate.ts:89-104](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts)
 
-- **Invariants run on every action.** Keep them fast — no I/O, no async.
-- **All invariants run after every action**, not just the relevant ones.
-- **`getPendingEvents()` clears the queue.** Call it once per use case.
-- **Props are dehydrated** — nested entities are unwrapped to raw data on `.props` access.
-- **Shallow copies.** Like Entity, mutations use shallow copy. Deeply nested structures need explicit handling.
+---
+
+## Domain Events
+
+Actions can return `{ event }` to queue a domain event:
+
+```ts
+actions: {
+  ship(state) {
+    if (state.status !== 'pending') throw new Error('Only pending orders can ship');
+    state.status = 'shipped';
+    return { event: { aggregateId: state.id, timestamp: new Date() } };
+  },
+},
+
+// After calling the action:
+order.actions.ship();
+const events = order.getPendingEvents();
+// events = [{ aggregateId: '...', timestamp: ... }]
+```
+
+> Events are **pull-based**: actions return events, they accumulate in a queue,
+> **you** decide when to dispatch. This keeps the domain layer free of infrastructure
+> concerns — no event bus, no message broker, no side effects.
+> [Source: aggregate.ts:201-205](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts)
+
+---
+
+## Entity vs Aggregate — when to use which
+
+| | Entity | Aggregate |
+|---|---|---|
+| **Identity** | ✅ Has `id` | ✅ Has `id` |
+| **Actions** | ✅ Mutable through actions | ✅ Mutable through actions |
+| **Invariants** | ❌ No invariants field | ✅ Required invariants |
+| **Nested entities** | ❌ Plain nested objects | ✅ Auto-hydrated entity instances |
+| **Domain events** | ❌ No event support | ✅ Pull-based event queue |
+| **Auto-setters** | ✅ From schema.shape | ❌ Not generated |
+
+Use **Entity** when you need identity + behavior without cross-field consistency rules.
+Use **Aggregate** when you need invariants that must be checked on every mutation —
+or when you compose multiple entities into a transactional boundary.
+
+> This distinction follows Evans: an Aggregate is a cluster of objects treated as
+> a unit for data changes. The Aggregate Root is the only access point.
+> [See: Architecture direction (issue #6)](https://github.com/kaizin-lab/sotajs-ddd/issues/6)
+
+---
+
+## Pitfalls
+
+- **Invariants run on every action — all of them.** Keep the list short and fast.
+- **`getPendingEvents()` clears the queue.** Call it once per use case. If you need to read without clearing, access the internal queue directly (not recommended).
+- **Shallow copies during actions.** Same as Entity. Nested structures share references with the draft.
+- **Props are dehydrated** — nested entities are unwrapped to raw data on `.props`. Use `.state` if you need entity instances.

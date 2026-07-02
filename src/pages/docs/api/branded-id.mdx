@@ -1,106 +1,105 @@
 ---
 title: "BrandedId"
-description: "createBrandedId — typed identity wrappers that prevent ID confusion at compile time"
+description: "createBrandedId — typed identity wrappers, compile-time safety for IDs"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
 ## `createBrandedId(config)`
 
-Creates a **BrandedId** class — a typed wrapper around a string ID that
-prevents accidentally mixing up different ID types (e.g., passing a `UserId`
-where a `ProductId` is expected).
-
-### Signature
+Creates a **BrandedId** class — a typed wrapper around a string ID that prevents
+accidentally mixing up different ID types. `UserId` and `ProductId` are incompatible
+at compile time, even though both wrap strings.
 
 ```ts
-function createBrandedId(config: {
-  brand: string;
-  validate: (value: string) => string;
-}): BrandedIdClass
+import { z } from 'zod';
+import { createBrandedId } from '@sotajs/ddd';
+
+const UserId = createBrandedId({
+  brand: 'UserId',
+  schema: z.string().uuid(),
+});
+type UserId = ReturnType<typeof UserId.create>;
+
+const ProductId = createBrandedId({
+  brand: 'ProductId',
+  schema: z.string().uuid(),
+});
+type ProductId = ReturnType<typeof ProductId.create>;
+
+// Compile-time safety:
+function assignToUser(id: UserId) {}
+assignToUser(productIdInstance); // TypeScript error
 ```
 
-### Config
+---
 
-| Property | Type | Description |
+## Config
+
+| Field | Required | Description |
 |---|---|---|
-| `brand` | `string` | A unique brand string. Used as a TypeScript literal type for branding. |
-| `validate` | `(value: string) => string` | Validates and optionally sanitizes the raw string. Throw on invalid. |
+| `brand` | **Yes** | Unique string literal. Used for TypeScript branding. |
+| `schema` | No* | Zod/Valibot schema for the string value. |
+| `type` | No* | ArkType type. |
+| `validate` | No* | Generic `(value: string) => string`. Can sanitize. |
 
-### Returned Class
+> *One of `schema`, `type`, or `validate` is required.
+
+---
+
+## Instance API
 
 | Member | Type | Description |
 |---|---|---|
-| `BrandedId.create(value)` | `BrandedId` | Static factory. Validates and returns instance. |
-| `id.value` | `string & { __brand }` | The branded string value. |
+| `BrandedId.create(value)` | BrandedId instance | Validates and returns instance. |
+| `id.value` | `string & { __brand }` | The branded string. |
 | `id.equals(other)` | `boolean` | Value comparison. |
 | `id.toString()` | `string` | Returns the raw string. |
-| `id.toJSON()` | `string` | JSON serialization returns the string. |
+| `id.toJSON()` | `string` | JSON serialization — returns the string. |
 
-### Example
+---
 
-```ts
-import { createBrandedId } from "@sotajs/ddd";
+## Why this exists
 
-const UserId = createBrandedId({
-  brand: "UserId",
-  validate: (v) => {
-    if (!v) throw new Error("UserId cannot be empty");
-    return v;
-  },
-});
-
-const ProductId = createBrandedId({
-  brand: "ProductId",
-  validate: (v) => v,
-});
-
-const uid = UserId.create("abc-123");
-const pid = ProductId.create("abc-123");
-
-// uid and pid have the same string value but are incompatible types
-console.log(uid.value);     // "abc-123"
-console.log(uid.toString()); // "abc-123"
-console.log(JSON.stringify(uid)); // '"abc-123"'
-```
-
-### Why BrandedId?
-
-Without branded IDs:
+TypeScript is structurally typed. Without branded IDs:
 
 ```ts
-function getUser(id: string) { /* ... */ }
-function getProduct(id: string) { /* ... */ }
+type UserId = string;
+type ProductId = string;
 
-const productId = "abc-123";
-getUser(productId); // compiles fine — wrong!
+function getUser(id: UserId) {}
+function getProduct(id: ProductId) {}
+
+const productId = 'abc-123';
+getUser(productId); // compiles — wrong ID passed
 ```
 
-With branded IDs:
+With branded IDs, the compiler catches the mistake. At runtime, validation
+still applies — schema or validate function runs on every `.create()`.
 
-```ts
-function getUser(id: ReturnType<typeof UserId.create>) { /* ... */ }
-function getProduct(id: ReturnType<typeof ProductId.create>) { /* ... */ }
+> `toJSON()` and `toString()` return the plain string — serialization is transparent.
+> You can store branded IDs in JSON, pass them to APIs, use them as route params.
+> Deserialize through `.create()` to get validation back.
 
-const productId = ProductId.create("abc-123");
-getUser(productId); // TypeScript error — UserId expected, got ProductId
-```
+---
 
-### Sanitization
+## Validation + sanitization
 
-The `validate` callback can also sanitize:
+The validator can also sanitize:
 
 ```ts
 const TrimmedId = createBrandedId({
-  brand: "Trimmed",
+  brand: 'Trimmed',
   validate: (v) => v.trim().toLowerCase(),
 });
 
-const id = TrimmedId.create("  HELLO  ");
-console.log(id.value); // "hello"
+const id = TrimmedId.create('  HELLO  ');
+id.value; // 'hello'
 ```
 
-### Pitfalls
+---
+
+## Pitfalls
 
 - **Brand is compile-time only.** At runtime, the value is a plain string.
-- **Not a UUID validator.** Write your own validation (regex, UUID check) in the `validate` callback.
-- **TypeScript-only safety.** JavaScript consumers won't get type errors, but the runtime validation still applies.
+- **Schema must validate a string.** `z.string().uuid()` works. `z.object({...})` does not.
+- **TypeScript-only safety.** JavaScript consumers can still mix up IDs, but runtime validation applies.
