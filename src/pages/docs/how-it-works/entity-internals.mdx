@@ -129,7 +129,8 @@ No deep comparison. An entity IS its identity.
 
 ## What's next?
 
-Aggregates add another layer: invariants that run after every action, auto-hydrated
-nested entities, and a pull-based event queue. **How Aggregates Work** covers the mechanics.
+Aggregates add cross-entity invariants, auto-hydrated nested entities, and a
+pull-based event queue. Entity has self-contained invariants; Aggregate enforces
+consistency across the whole cluster. **How Aggregates Work** covers the mechanics.
 
 → [How Aggregates Work](/docs/how-it-works/aggregate-mechanics/)

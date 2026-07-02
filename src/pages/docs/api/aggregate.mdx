@@ -172,18 +172,19 @@ const events = order.getPendingEvents();
 |---|---|---|
 | **Identity** | ✅ Has `id` | ✅ Has `id` |
 | **Actions** | ✅ Mutable through actions | ✅ Mutable through actions |
-| **Invariants** | ❌ No invariants field | ✅ Required invariants |
+| **Invariants** | ✅ Optional — self-contained only | ✅ Required — spans nested entities |
 | **Nested entities** | ❌ Plain nested objects | ✅ Auto-hydrated entity instances |
 | **Domain events** | ❌ No event support | ✅ Pull-based event queue |
 | **Auto-setters** | ✅ From schema.shape | ❌ Not generated |
 
-Use **Entity** when you need identity + behavior without cross-field consistency rules.
-Use **Aggregate** when you need invariants that must be checked on every mutation —
-or when you compose multiple entities into a transactional boundary.
+Use **Entity** when you need identity + behavior with self-contained business rules.
+Use **Aggregate** when you need invariants that span multiple entities —
+or when you compose entities into a transactional boundary with domain events.
 
 > This distinction follows Evans: an Aggregate is a cluster of objects treated as
-> a unit for data changes. The Aggregate Root is the only access point.
-> [See: Architecture direction (issue #6)](https://github.com/kaizin-lab/sotajs-ddd/issues/6)
+> a unit for data changes. The Aggregate Root is the only access point. Entity invariants
+> are checked within their own boundary; Aggregate invariants enforce consistency across
+> the whole cluster.
 
 ---
 

@@ -1,45 +1,97 @@
 ---
 title: "Invariants"
-description: "Cross-field consistency rules — where they live and why they matter"
+description: "Cross-field consistency rules — Entity vs Aggregate, action guards, and where invariants live"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
 > **What you'll learn**
-> - Three places invariants can live — and which two are correct
-> - How Aggregate invariants differ from action guard clauses
-> - When to use Aggregate vs Entity for invariants
+> - Four places invariants can live — and which two are design-time guarantees
+> - How Entity invariants differ from Aggregate invariants
+> - When invariants beat action guard clauses
 > - Why invariants must be synchronous
 
 ## Where invariants live
 
-There are three places invariants can live. Only two are correct:
+There are four places invariants can live. Two are design-time guarantees (automatic),
+two are developer discipline:
 
-| Location | When | Example |
-|---|---|---|
-| Zod schema | Single-field format constraints | `z.string().email()` |
-| Action guard clause | Preconditions for a mutation | "Can't ship unconfirmed order" |
-| Aggregate `invariants` | Rules spanning multiple fields | "Total must match sum of items" |
+| Location | Enforcement | Scope | Example |
+|---|---|---|---|
+| Zod schema | Automatic (parser) | Single field | `z.string().email()` |
+| Entity `invariants` | Automatic (every action) | Self-contained cross-field | "Inactive user must have deactivatedAt" |
+| Aggregate `invariants` | Automatic (every action) | Cross-entity cross-field | "Total must match sum of item prices" |
+| Action guard clause | Manual (per-action) | Per-action precondition | "Can't ship unconfirmed order" |
 
-Zod catches `"notanemail"` → `@sotajs/ddd` catches "can't ship unconfirmed."
+Zod catches `"notanemail"`. Entity invariants catch `status=inactive` without `deactivatedAt`.
+Aggregate invariants catch `Order.total ≠ sum(OrderItem.price × qty)`. Action guards catch
+"this action shouldn't be called right now."
 
-## Invariants in Aggregate
+## Entity invariants
 
-`invariants` is a **required** field on Aggregate. It runs at `.create()` and after
-**every** action — all invariants, not just "relevant" ones:
+Entity now has an optional `invariants` field. These are **self-contained** — they only
+validate the entity's own props, never nested entities (there aren't any).
+
+```ts
+const User = createEntity({
+  schema: z.object({
+    id: z.string(),
+    name: z.string(),
+    status: z.enum(['active', 'inactive']),
+    deactivatedAt: z.date().optional(),
+  }),
+  actions: {
+    deactivate(state) {
+      state.status = 'inactive';
+      state.deactivatedAt = new Date();
+    },
+  },
+  invariants: [
+    (props) => {
+      if (props.status === 'inactive' && !props.deactivatedAt)
+        throw new Error('Inactive user must have deactivatedAt');
+    },
+  ],
+});
+```
+
+> Invariants run on `create()` and after **every** action — auto-setters included.
+> If an invariant throws, the draft is discarded and state is unchanged.
+
+❌ **Action guard for cross-field rules (the old way):**
+
+```ts
+actions: {
+  deactivate(state) {
+    state.status = 'inactive';
+    state.deactivatedAt = new Date();
+    // Each action must remember to set both fields — no design-time guarantee
+  },
+  reactivate(state) {
+    state.status = 'active';
+    state.deactivatedAt = undefined;
+    // Did we remember? If we forget deactivatedAt, only hope catches it.
+  },
+}
+```
+
+> Without invariants, every action that touches `status` must remember `deactivatedAt`.
+> With invariants, you write the rule once — the library enforces it on every mutation.
+
+## Aggregate invariants
+
+`invariants` on Aggregate is **required**. It runs at `.create()` and after
+**every** action — all invariants, not just "relevant" ones.
+
+The key difference from Entity: Aggregate invariants can span **nested entities**.
+When `Order.items` hydrates into `OrderItem[]` entity instances, invariants can
+validate relationships between the root and its children:
 
 ```ts
 const Order = createAggregate({
   name: 'Order',
   schema: OrderSchema,
+  entities: { items: OrderItem },
   invariants: [
-    (props) => {
-      if (props.items.length === 0)
-        throw new Error('Order must have at least one item');
-    },
-    (props) => {
-      if (props.status === 'confirmed' && props.amountPaid <= 0)
-        throw new Error('Cannot confirm unpaid order');
-    },
     (props) => {
       const itemTotal = props.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
       if (Math.abs(props.total - itemTotal) > 0.01)
@@ -55,58 +107,22 @@ const Order = createAggregate({
 });
 ```
 
-❌ **Checking invariants in the controller:**
-
-```ts
-// Controller:
-function confirmOrder(id: string) {
-  const order = repo.get(id);
-  if (order.props.amountPaid <= 0) throw new Error('Unpaid');
-  order.actions.confirm();
-}
-```
-
-> "Can't confirm unpaid" belongs to the domain, not to a specific HTTP endpoint.
-> In the controller, every other caller must duplicate the check.
-
-## Invariants in Entity (via actions)
-
-Entity doesn't have an `invariants` field. Guards live in actions:
-
-```ts
-const User = createEntity({
-  schema: UserSchema,
-  actions: {
-    deactivate(state) {
-      if (!state.emailVerified) throw new Error('Must verify email first');
-      if (state.status === 'inactive') throw new Error('Already inactive');
-      state.status = 'inactive';
-    },
-  },
-});
-```
-
-❌ **Skipping guards:**
-
-```ts
-actions: {
-  deactivate(state) {
-    state.status = 'inactive'; // any caller can deactivate, anytime
-  },
-}
-```
-
-> Without guards, the entity can reach invalid states. Actions should reject
-> calls that would break domain rules.
+> This is the aggregate's unique guarantee: invariants that span **multiple entities**
+> within a transactional boundary. Entity invariants can't do this — they only see
+> their own props.
 
 ## Entity vs Aggregate for invariants
 
 | | Entity | Aggregate |
 |---|---|---|
 | Single-field validation | Zod schema | Zod schema |
+| Self-contained cross-field rule | `invariants` (optional) | `invariants` (required) |
+| Cross-entity rule | ❌ Not possible | `invariants` (required) |
 | Action precondition | Guard in action | Guard in action |
-| Cross-field rule (all actions) | ❌ | `invariants` array |
-| Cross-field rule (specific action) | Guard in that action | Guard in that action |
+
+Use **Entity invariants** when the rule involves only the entity's own fields
+(`status=inactive ⇒ deactivatedAt`). Use **Aggregate invariants** when the rule
+spans the root and its children (`total = sum(items)`).
 
 ❌ **Aggregate with empty invariants:**
 
@@ -119,7 +135,8 @@ createAggregate({
 })
 ```
 
-> Aggregate exists for the `invariants` guarantee. No invariants → use `createEntity`.
+> If you have no cross-entity invariants and no nested entities — use `createEntity`.
+> Aggregate exists for the cross-entity consistency guarantee.
 
 ## Invariants must be synchronous
 
@@ -141,14 +158,14 @@ invariants: [
 
 ## What you've learned
 
-**Three locations for validation.** Zod for format, action guards for preconditions,
-Aggregate `invariants` for cross-field rules that must hold after every mutation.
+**Four locations for validation.** Zod for format, Entity invariants for self-contained
+cross-field rules, Aggregate invariants for cross-entity rules, action guards for
+per-action preconditions.
 
 **Invariants run on every action.** All invariants, every time — not just the ones
-that seem "relevant." This is the guarantee that makes Aggregate different from Entity.
-
-**Use Aggregate when you have cross-field rules.** If you don't, `createEntity` is simpler
-and gives you auto-setters. Aggregate's sole reason to exist is the invariants guarantee.
+that seem "relevant." Both Entity and Aggregate enforce this guarantee. The difference
+is scope: Entity invariants see only the entity's own props; Aggregate invariants
+span nested entities.
 
 **Invariants are synchronous and pure.** No database calls, no HTTP. Validate the
 entity's own state. External checks (uniqueness, existence) belong in the use case.

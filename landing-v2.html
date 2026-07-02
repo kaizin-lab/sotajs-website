@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sotajs/ddd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14; --surface: #11171d; --border: #21262d; --border-muted: #161b22;
+    --text: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58;
+    --accent: #22d3ee; --red: #f85149; --amber: #d2991d; --green: #3fb950;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0}
+  html{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-size:16px;line-height:1.6}
+  body{max-width:960px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.88em}
+  :not(pre)>code{color:var(--accent);background:rgba(34,211,238,.08);padding:.1em .4em;border-radius:3px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:20px 24px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.65}
+  pre code{color:var(--text)}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:var(--text-muted);font-style:italic}.ty{color:#ffa657}.op{color:#ff7b72}.num{color:#79c0ff}
+
+  .chrome{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0d1117}
+  .chrome-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border-muted);background:var(--surface)}
+  .chrome-dot{width:12px;height:12px;border-radius:50%}
+  .chrome-dot.r{background:var(--red);opacity:.6}
+  .chrome-dot.y{background:var(--amber);opacity:.6}
+  .chrome-dot.g{background:var(--green);opacity:.6}
+  .chrome-fname{margin-left:8px;font-size:.75rem;color:var(--text-muted);font-family:var(--mono)}
+  .chrome pre{border:none;border-radius:0;margin:0}
+
+  section{padding:80px 0}
+  section+section{border-top:1px solid var(--border-muted)}
+  h1{font-size:2.8rem;font-weight:700;line-height:1.08;letter-spacing:-.03em;margin-bottom:16px}
+  h2{font-size:1.5rem;font-weight:600;margin-bottom:12px}
+  .sub{color:var(--text-secondary);font-size:1.1rem;line-height:1.65;max-width:580px}
+  .label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:16px}
+  .row{display:flex;gap:48px;align-items:flex-start}
+  .col{flex:1;min-width:0}
+
+  .tension-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
+  .tension-card{background:var(--surface);border:1px solid var(--border-muted);border-radius:6px;padding:20px}
+  .tension-card .num{font-family:var(--mono);font-size:.7rem;color:var(--accent);margin-bottom:8px}
+  .tension-card h3{font-size:.92rem;font-weight:600;margin-bottom:6px}
+  .tension-card p{color:var(--text-secondary);font-size:.85rem;line-height:1.55}
+
+  .benefit{display:flex;align-items:flex-start;gap:12px;margin-bottom:24px}
+  .benefit-num{font-family:var(--mono);font-size:.75rem;color:var(--accent);min-width:24px;padding-top:2px}
+  .benefit h3{font-size:.95rem;font-weight:600;margin-bottom:4px}
+  .benefit p{color:var(--text-secondary);font-size:.88rem;line-height:1.55}
+
+  .contrast{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .contrast-col{position:relative}
+  .contrast-label{position:absolute;top:-28px;right:0;font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:3px}
+  .contrast-label.bad{background:rgba(248,81,73,.15);color:var(--red)}
+  .contrast-label.good{background:rgba(34,211,238,.12);color:var(--accent)}
+
+  .cta{text-align:center;padding:100px 0 80px}
+  .cta pre{display:inline-block;text-align:left;margin-bottom:16px}
+  .cta p{color:var(--text-muted);font-size:.9rem}
+
+  @media(max-width:768px){
+    h1{font-size:1.8rem}
+    .row{flex-direction:column;gap:32px}
+    .tension-grid,.contrast{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<section style="padding-top:100px;padding-bottom:60px">
+  <p class="label">Tactical DDD for Node.js / TypeScript</p>
+  <h1>Tactical DDD was designed<br>for a runtime <span style="color:var(--accent)">Node doesn't provide</span></h1>
+  <p class="sub">
+    Nominal typing, real encapsulation, synchronous transactional consistency —
+    DDD patterns assume a Java/C# runtime. In Node you pay for every invariant
+    with manual infrastructure: brand types, hand-rolled repositories,
+    optimistic locking. Teams cut corners — keeping the vocabulary, losing the guarantees.
+  </p>
+</section>
+
+<section>
+  <p class="label">The gap</p>
+  <h2>Five reasons DDD is expensive in Node — and what we fix</h2>
+
+  <div class="tension-grid">
+    <div class="tension-card">
+      <div class="num">01</div>
+      <h3>Structural typing sabotages Value Objects</h3>
+      <p>Two <code>{value: string}</code> are interchangeable even when one is Email and one is Username.
+      Brand types are a manual hack every team writes differently — or skips.</p>
+    </div>
+    <div class="tension-card">
+      <div class="num">02</div>
+      <h3>No runtime encapsulation</h3>
+      <p><code>JSON.stringify</code> and ORM mapping bypass privacy. Private fields (#) exist but
+      serialization flattens aggregates into plain objects. Invariants don't survive the persistence boundary.</p>
+    </div>
+    <div class="tension-card">
+      <div class="num">03</div>
+      <h3>async/await breaks transactional consistency</h3>
+      <p>Domain events in Java are collected during one synchronous transaction.
+      In Node, parallel requests to one aggregate race. Optimistic locking is rarely built — and rarely done.</p>
+    </div>
+    <div class="tension-card">
+      <div class="num">04</div>
+      <h3>No ORM supports rich domain models</h3>
+      <p>Prisma generates anemic DTOs. Drizzle is a SQL builder. Every Repository pattern
+      requires custom mapping. The cost of "clean" DDD is disproportionate for medium projects.</p>
+    </div>
+    <div class="tension-card">
+      <div class="num">05</div>
+      <h3>Culture: transformations, not invariants</h3>
+      <p>Node grew from Express middleware and functional pipelines — thinking in data flows,
+      not in consistency boundaries. DDD patterns feel like cargo-cult without culture fit.</p>
+    </div>
+    <div class="tension-card">
+      <div class="num">→</div>
+      <h3>We close the gap</h3>
+      <p><code>@sotajs/ddd</code> gives you compile-time branded IDs, runtime encapsulation (WeakMap + deepFreeze),
+      invariant enforcement on every action, and validator-agnostic schemas — four functions, zero lock-in.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="label">The cost of doing it right</p>
+  <h2>Rich domain model. Two ways to write it.</h2>
+
+  <div class="contrast" style="margin-top:24px">
+    <div class="contrast-col">
+      <span class="contrast-label bad">Manual — 45 lines, never written</span>
+      <pre><code><span class="kw">class</span> <span class="ty">User</span> {
+  <span class="kw">private</span> bio: <span class="ty">string</span>;
+  <span class="kw">private</span> username: <span class="ty">string</span>;
+  
+  <span class="kw">constructor</span>(<span class="kw">private</span> props: UserProps) {
+    <span class="kw">this</span>.bio = props.bio;
+    <span class="kw">this</span>.username = props.username;
+  }
+
+  updateBio(bio: <span class="ty">string</span>) {
+    <span class="kw">if</span> (bio.length > <span class="num">500</span>)
+      <span class="kw">throw new</span> <span class="ty">Error</span>(<span class="str">"Too long"</span>);
+    <span class="kw">this</span>.bio = bio;
+  }
+  updateUsername(name: <span class="ty">string</span>) {
+    <span class="kw">if</span> (!name) <span class="kw">throw new</span> <span class="ty">Error</span>(<span class="str">"Required"</span>);
+    <span class="kw">this</span>.username = name;
+  }
+
+  get props(): <span class="ty">Readonly</span>&lt;UserProps&gt; {
+    <span class="kw">return</span> <span class="ty">Object</span>.freeze({...<span class="kw">this</span>});
+  }
+  equals(other: <span class="ty">User</span>): <span class="ty">boolean</span> {
+    <span class="kw">return this</span>.id === other.id;
+  }
+  <span class="cm">// ×20 entities = 900 lines
+  // Nobody writes this.</span>
+}</code></pre>
+    </div>
+    <div class="contrast-col">
+      <span class="contrast-label good">@sotajs/ddd — 3 config fields</span>
+      <pre><code><span class="kw">const</span> <span class="ty">User</span> = <span class="fn">createEntity</span>({
+  <span class="kw">schema</span>: UserSchema,
+  <span class="kw">actions</span>: {
+    <span class="fn">updateBio</span>(state, bio) { state.bio = bio; },
+    <span class="fn">updateUsername</span>(state, n) { state.username = n; },
+  },
+  <span class="kw">computed</span>: {
+    <span class="fn">displayName</span>(props) {
+      <span class="kw">return</span> props.username;
+    },
+  },
+});
+<span class="cm">// deepFreeze, auto-setters,
+// equals, type inference —
+// all automatic.</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="label">Full example</p>
+  <h2>One declaration. What you get.</h2>
+
+  <div class="row" style="margin-top:24px">
+    <div class="col">
+      <div class="chrome" style="margin-bottom:32px">
+        <div class="chrome-bar">
+          <span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span>
+          <span class="chrome-fname">user-profile.entity.ts</span>
+        </div>
+        <pre><code><span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+<span class="kw">import</span> { createEntity } <span class="kw">from</span> <span class="str">'@sotajs/ddd'</span>;
+
+<span class="kw">const</span> UserProfileSchema = z.<span class="fn">object</span>({
+  id: z.<span class="fn">string</span>().<span class="fn">uuid</span>(),
+  username: z.<span class="fn">string</span>(),
+  bio: z.<span class="fn">string</span>().<span class="fn">optional</span>(),
+});
+<span class="kw">type</span> <span class="ty">UserProfileProps</span> = z.<span class="ty">infer</span>&lt;<span class="kw">typeof</span> UserProfileSchema&gt;;
+
+<span class="kw">export const</span> <span class="ty">UserProfile</span> = <span class="fn">createEntity</span>({
+  <span class="kw">schema</span>: UserProfileSchema,
+  <span class="kw">actions</span>: {
+    <span class="fn">updateUsername</span>(state, name: <span class="ty">string</span>) {
+      state.username = name;
+    },
+    <span class="fn">updateBio</span>(state, bio: <span class="ty">string</span>) {
+      state.bio = bio;
+    },
+  },
+  <span class="kw">computed</span>: {
+    <span class="fn">displayName</span>(props) { <span class="kw">return</span> props.username; },
+  },
+});
+<span class="kw">export type</span> <span class="ty">UserProfile</span> =
+  <span class="ty">ReturnType</span>&lt;<span class="kw">typeof</span> UserProfile.create&gt;;</code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="benefit">
+        <span class="benefit-num">01</span>
+        <div><h3>Schema = types = validation</h3>
+        <p><code>z.infer</code> gives you props type. <code>ReturnType</code> gives you entity type. One source of truth, zero drift.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">02</span>
+        <div><h3>Actions — the only path to mutation</h3>
+        <p><code>props</code> is a frozen snapshot. <code>entity.props.bio = "x"</code> throws TypeError. Changes only through named, typed actions.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">03</span>
+        <div><h3>Auto-setters from schema</h3>
+        <p>Every field except <code>id</code> gets a typed <code>setField()</code> method. Generated from <code>schema.shape</code> — no manual code.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">04</span>
+        <div><h3>Computed properties, not function calls</h3>
+        <p><code>profile.displayName</code> is a getter. Defined once in config, reads like native data.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">05</span>
+        <div><h3>Identity by id, not reference</h3>
+        <p><code>a.equals(b)</code> compares by <code>id</code>. Two instances from different queries — same entity.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">06</span>
+        <div><h3>Zero runtime dependencies</h3>
+        <p>No Immer, no DI, no ORM. Works with Zod, ArkType, Valibot, or a plain function you write.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="label">In use</p>
+  <h2>From declaration to use case</h2>
+  <p class="sub" style="margin-bottom:24px">
+    The entity is a typed, safe object you use in commands — no framework, no ORM, no DI.
+  </p>
+
+  <div class="chrome">
+    <div class="chrome-bar">
+      <span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span>
+      <span class="chrome-fname">update-profile.command.ts</span>
+    </div>
+    <pre><code><span class="cm">// Schema validates on create</span>
+<span class="kw">const</span> profile = <span class="ty">UserProfile</span>.<span class="fn">create</span>({
+  id: <span class="str">'b3f1ae2c-abcd'</span>,
+  username: <span class="str">'alice'</span>,
+});
+
+<span class="cm">// Use in a command — actions are typed</span>
+<span class="kw">export const</span> <span class="fn">updateProfileCommand</span> = <span class="kw">async</span> (
+  userId: <span class="ty">string</span>, bio: <span class="ty">string</span>,
+) => {
+  <span class="kw">const</span> profile = <span class="kw">await</span> profiles.<span class="fn">findById</span>(userId);
+  
+  profile.actions.<span class="fn">updateBio</span>(bio);
+  <span class="kw">await</span> profiles.<span class="fn">save</span>(profile);
+  
+  <span class="kw">return</span> {
+    id: profile.id,
+    displayName: profile.displayName,
+  };
+};</code></pre>
+  </div>
+</section>
+
+<section>
+  <p class="label">Your stack</p>
+  <h2>Four functions. Not a framework.</h2>
+  <div class="row" style="margin-top:24px">
+    <div class="col">
+      <div class="benefit">
+        <span class="benefit-num">→</span>
+        <div><h3>Works inside NestJS — or anything</h3>
+        <p>Your controllers, DI, and modules stay as they are. The library lives in the domain layer. No decorators, no base classes.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">→</span>
+        <div><h3>No new vocabulary</h3>
+        <p>You already write Zod schemas for DTOs. That's the schema. Actions are functions. Computed are getters. The library removes the boilerplate between them.</p></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="benefit">
+        <span class="benefit-num">→</span>
+        <div><h3>One module at a time</h3>
+        <p>Replace <code>interface Order</code> with <code>createAggregate</code> in one service. The app doesn't notice. Roll back if it doesn't fit.</p></div>
+      </div>
+      <div class="benefit">
+        <span class="benefit-num">→</span>
+        <div><h3>When you don't need it</h3>
+        <p>CRUD with no business rules? <code>z.object + interface</code> is enough. The library earns its place when invariants change and business logic outgrows services.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <pre><code>npm install @sotajs/ddd</code></pre>
+  <p>TypeScript ^5.0 · Zero dependencies · <a href="https://github.com/kaizin-lab/sotajs-ddd">GitHub</a></p>
+</section>
+
+</body>
+</html>

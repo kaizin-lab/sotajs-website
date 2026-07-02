@@ -17,25 +17,32 @@ const UserSchema = z.object({
   id: z.string().uuid(),
   username: z.string(),
   bio: z.string().optional(),
-  emailVerified: z.boolean().default(false),
+  status: z.enum(['active', 'inactive']),
+  deactivatedAt: z.date().optional(),
 });
 
 const User = createEntity({
   schema: UserSchema,
   actions: {
-    verifyEmail(state) {
-      if (state.emailVerified) throw new Error('Already verified');
-      state.emailVerified = true;
+    deactivate(state) {
+      state.status = 'inactive';
+      state.deactivatedAt = new Date();
     },
   },
+  invariants: [
+    (props) => {
+      if (props.status === 'inactive' && !props.deactivatedAt)
+        throw new Error('Inactive user must have deactivatedAt');
+    },
+  ],
   computed: {
     displayName(props) { return props.username; },
   },
 });
 type User = ReturnType<typeof User.create>;
 
-const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice' });
-user.actions.verifyEmail();
+const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice', status: 'active' });
+user.actions.deactivate();
 console.log(user.displayName); // 'alice'
 ```
 
@@ -54,6 +61,7 @@ console.log(user.displayName); // 'alice'
 | `type` | No* | ArkType type — callable. Fastest validation path. |
 | `validate` | No* | Generic `(data: unknown) => TProps`. Use with any validator or plain function. |
 | `actions` | **Yes** | Named operations that mutate state. First argument is a mutable draft. |
+| `invariants` | No | Self-contained business rules. Checked on `create()` and after every action. |
 | `computed` | No | Derived getters. Each key becomes a property on the entity instance. |
 
 > *One of `schema`, `type`, or `validate` is required. Pick the one that matches your validator.
@@ -79,14 +87,14 @@ When you call an action, the library:
 1. Reads current state from an internal `WeakMap`
 2. Creates a **shallow copy** (`{ ...current }`)
 3. Passes the copy to your action function — you mutate it freely
-4. Checks invariants (only on Aggregate)
+4. Checks invariants (if defined)
 5. Writes the copy back to the `WeakMap`
 
 ```ts
 // Your action
-verifyEmail(state) {
-  if (state.emailVerified) throw new Error('Already verified');
-  state.emailVerified = true; // mutating a draft copy
+deactivate(state) {
+  state.status = 'inactive';
+  state.deactivatedAt = new Date();
 }
 // The library swaps the draft in — atomic from your perspective
 ```
@@ -107,6 +115,46 @@ user.props.bio = 'x'; // TypeError: Cannot assign to read only property
 > Every read creates a new snapshot. The original state is untouched.
 > This is not a convention — it's a physical constraint of the runtime.
 > [Source: entity.ts:112-115](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
+
+---
+
+## Invariants
+
+Entity invariants are **self-contained** business rules — they only validate the entity's
+own state, never nested entities (there aren't any). Use an Aggregate for cross-entity consistency.
+
+```ts
+const User = createEntity({
+  schema: z.object({
+    id: z.string(),
+    name: z.string(),
+    status: z.enum(['active', 'inactive']),
+    deactivatedAt: z.date().optional(),
+  }),
+  actions: {
+    deactivate(state) {
+      state.status = 'inactive';
+      state.deactivatedAt = new Date();
+    },
+  },
+  invariants: [
+    (props) => {
+      if (props.status === 'inactive' && !props.deactivatedAt)
+        throw new Error('Inactive user must have deactivatedAt');
+    },
+  ],
+});
+
+const user = User.create({ id: '1', name: 'Alice', status: 'active' });
+user.actions.setName('Alicia');         // auto-setter — invariant holds
+user.actions.deactivate();              // action — sets both fields, invariant holds
+user.actions.setName('');               // auto-setter — passes here, but add your own rule
+```
+
+> Invariants are checked on `create()` and after **every** action — auto-setters included.
+> If an invariant throws, the state is **not modified** — the draft copy is discarded.
+> Keep invariants pure and synchronous: no I/O, no async, no network calls.
+> [Source: entity.ts:184-188, 226-230](https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts)
 
 ---
 

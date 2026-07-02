@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sotajs/ddd</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14; --surface: #11171d; --border: #21262d; --border-muted: #161b22;
+    --text: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58;
+    --accent: #22d3ee; --red: #f85149; --amber: #d2991d; --green: #3fb950;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0}
+  html{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-size:16px;line-height:1.6}
+  body{max-width:960px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.88em}
+  :not(pre)>code{color:var(--accent);background:rgba(34,211,238,.08);padding:.1em .4em;border-radius:3px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:20px 24px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.65}
+  pre code{color:var(--text)}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:var(--text-muted);font-style:italic}.ty{color:#ffa657}.num{color:#79c0ff}
+
+  .chrome{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0d1117}
+  .chrome-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border-muted);background:var(--surface)}
+  .chrome-dot{width:12px;height:12px;border-radius:50%}
+  .chrome-dot.r{background:var(--red);opacity:.6}.chrome-dot.y{background:var(--amber);opacity:.6}.chrome-dot.g{background:var(--green);opacity:.6}
+  .chrome-fname{margin-left:8px;font-size:.75rem;color:var(--text-muted);font-family:var(--mono)}
+  .chrome pre{border:none;border-radius:0;margin:0}
+
+  section{padding:80px 0}
+  section+section{border-top:1px solid var(--border-muted)}
+  h1{font-size:2.8rem;font-weight:700;line-height:1.08;letter-spacing:-.03em;margin-bottom:16px}
+  h2{font-size:1.45rem;font-weight:600;margin-bottom:12px}
+  .sub{color:var(--text-secondary);font-size:1.05rem;line-height:1.65;max-width:600px}
+  .label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:12px}
+  .row{display:flex;gap:48px;align-items:flex-start}
+  .col{flex:1;min-width:0}
+
+  .gap-header{display:flex;align-items:baseline;gap:16px;margin-bottom:16px}
+  .gap-num{font-family:var(--mono);font-size:.8rem;color:var(--accent);min-width:28px}
+  .gap-problem{font-family:var(--mono);font-size:.72rem;color:var(--red);background:rgba(248,81,73,.08);padding:2px 8px;border-radius:3px;margin-bottom:12px;display:inline-block}
+  .gap-solution{font-family:var(--mono);font-size:.72rem;color:var(--green);background:rgba(63,185,80,.08);padding:2px 8px;border-radius:3px;margin-bottom:12px;display:inline-block}
+
+  .contrast{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .contrast-col{position:relative}
+  .contrast-label{position:absolute;top:-28px;right:0;font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:3px}
+  .contrast-label.bad{background:rgba(248,81,73,.15);color:var(--red)}
+  .contrast-label.good{background:rgba(34,211,238,.12);color:var(--accent)}
+
+  .result{display:flex;gap:32px;margin-top:24px}
+  .result-item{flex:1;background:var(--surface);border:1px solid var(--border-muted);border-radius:6px;padding:16px}
+  .result-item h4{font-size:.88rem;font-weight:600;margin-bottom:6px}
+  .result-item p{color:var(--text-secondary);font-size:.82rem;line-height:1.5}
+
+  .cta{text-align:center;padding:100px 0 80px}
+  .cta pre{display:inline-block;text-align:left;margin-bottom:16px}
+  .cta p{color:var(--text-muted);font-size:.9rem}
+
+  .small-label{font-size:.7rem;color:var(--text-muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+
+  @media(max-width:768px){
+    h1{font-size:1.7rem}
+    .row,.result{flex-direction:column;gap:24px}
+    .contrast{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section style="padding-top:100px;padding-bottom:72px">
+  <p class="label">@sotajs/ddd</p>
+  <h1>Tactical DDD was designed for<br>a runtime <span style="color:var(--accent)">Node doesn't provide</span></h1>
+  <p class="sub">
+    Nominal typing, real encapsulation, rich domain models — DDD patterns assume a Java/C# runtime.
+    In Node you pay for every invariant with manual infrastructure. Most teams cut corners,
+    keeping the vocabulary and losing the guarantees.
+  </p>
+  <p class="sub" style="margin-top:12px;color:var(--accent);font-weight:500">
+    Four functions. Zero lock-in. DDD without the infrastructure tax.
+  </p>
+</section>
+
+<!-- ═══════════ GAP 1: BRANDED ID ═══════════ -->
+<section>
+  <div class="gap-header">
+    <span class="gap-num">01</span>
+    <h2>Structural typing: <span style="font-weight:400">two strings, same type</span></h2>
+  </div>
+  <span class="gap-problem">TS lets you pass a UserId where a ProductId is expected</span>
+
+  <div class="row" style="margin-top:20px">
+    <div class="col">
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library</span></div>
+        <pre><code><span class="kw">type</span> <span class="ty">UserId</span> = <span class="ty">string</span>;
+<span class="kw">type</span> <span class="ty">ProductId</span> = <span class="ty">string</span>;
+
+<span class="kw">function</span> <span class="fn">assignToUser</span>(id: <span class="ty">UserId</span>) { ... }
+<span class="kw">function</span> <span class="fn">getProduct</span>(id: <span class="ty">ProductId</span>) { ... }
+
+<span class="fn">assignToUser</span>(productId); <span class="cm">// compiles. runtime bug.</span>
+<span class="fn">getProduct</span>(userId);      <span class="cm">// compiles. another bug.</span></code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd</span></div>
+        <pre><code><span class="kw">import</span> { createBrandedId } <span class="kw">from</span> <span class="str">'@sotajs/ddd'</span>;
+
+<span class="kw">const</span> <span class="ty">UserId</span> = <span class="fn">createBrandedId</span>({
+  <span class="kw">brand</span>: <span class="str">'UserId'</span>,
+  <span class="kw">schema</span>: z.<span class="fn">string</span>().<span class="fn">uuid</span>(),
+});
+<span class="kw">const</span> <span class="ty">ProductId</span> = <span class="fn">createBrandedId</span>({
+  <span class="kw">brand</span>: <span class="str">'ProductId'</span>,
+  <span class="kw">schema</span>: z.<span class="fn">string</span>().<span class="fn">uuid</span>(),
+});
+
+<span class="fn">assignToUser</span>(productId); <span class="cm">// TypeScript error</span>
+<span class="fn">getProduct</span>(userId);      <span class="cm">// TypeScript error</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>Compile-time safety</h4>
+      <p><code>UserId</code> and <code>ProductId</code> are distinct types. The compiler catches swaps before they reach production.</p>
+    </div>
+    <div class="result-item">
+      <h4>Validation on creation</h4>
+      <p>Schema validates the raw string on <code>.create()</code>. UUID format enforced, no silent garbage.</p>
+    </div>
+    <div class="result-item">
+      <h4>JSON-safe</h4>
+      <p><code>.toJSON()</code> and <code>.toString()</code> built in. Serializes to plain string, deserializes through <code>.create()</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ GAP 2: ENCAPSULATION ═══════════ -->
+<section>
+  <div class="gap-header">
+    <span class="gap-num">02</span>
+    <h2>Encapsulation: <span style="font-weight:400">no true privacy in JS</span></h2>
+  </div>
+  <span class="gap-problem">Private fields exist but serialization strips them. ORMs write past every guard.</span>
+
+  <div class="row" style="margin-top:20px">
+    <div class="col">
+      <div class="chrome" style="margin-bottom:16px">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library</span></div>
+        <pre><code><span class="kw">class</span> <span class="ty">User</span> {
+  <span class="kw">constructor</span>(<span class="kw">public</span> bio: <span class="ty">string</span>) {}
+}
+<span class="kw">const</span> user = <span class="kw">new</span> <span class="ty">User</span>(<span class="str">'hello'</span>);
+
+user.bio = <span class="str">'anything'</span>; <span class="cm">// direct mutation</span>
+
+<span class="cm">// ORM saves it. Invariant check? Skipped.
+// JSON.stringify(user) — full access.
+// Six months later: who changed this?</span></code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="chrome" style="margin-bottom:16px">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd</span></div>
+        <pre><code><span class="kw">const</span> <span class="ty">User</span> = <span class="fn">createEntity</span>({
+  <span class="kw">schema</span>: UserSchema,
+  <span class="kw">actions</span>: {
+    <span class="fn">updateBio</span>(state, bio) {
+      state.bio = bio;
+    },
+  },
+});
+
+user.actions.<span class="fn">updateBio</span>(<span class="str">'new bio'</span>);  <span class="cm">// ✓</span>
+user.props.bio = <span class="str">'x'</span>; <span class="cm">// TypeError!</span>
+user.props.items.<span class="fn">push</span>(...);     <span class="cm">// TypeError!</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>WeakMap state storage</h4>
+      <p>State lives outside <code>this</code>. No public fields. No accidental exposure through iteration or logging.</p>
+    </div>
+    <div class="result-item">
+      <h4>deepFreeze on every read</h4>
+      <p><code>.props</code> returns a frozen snapshot. Mutation throws TypeError. Not a convention — a physical constraint.</p>
+    </div>
+    <div class="result-item">
+      <h4>Actions — single path</h4>
+      <p>Every state change has a name, a typed signature, and a single location. Grep <code>actions.updateBio</code> → you found every call site.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ GAP 4: COST ═══════════ -->
+<section>
+  <div class="gap-header">
+    <span class="gap-num">03</span>
+    <h2>The cost gap: <span style="font-weight:400">rich model = 900 lines of boilerplate</span></h2>
+  </div>
+  <span class="gap-problem">Manual DDD is correct but nobody writes it. Anemic models win not by merit but by price.</span>
+
+  <div class="contrast" style="margin-top:20px">
+    <div class="contrast-col">
+      <span class="contrast-label bad">Manual — 45 lines per entity, never written</span>
+      <pre><code><span class="kw">class</span> <span class="ty">User</span> {
+  <span class="kw">private</span> bio: <span class="ty">string</span>;
+  <span class="kw">private</span> username: <span class="ty">string</span>;
+
+  <span class="kw">constructor</span>(props: UserProps) {
+    <span class="kw">this</span>.bio  = props.bio;
+    <span class="kw">this</span>.username = props.username;
+  }
+
+  updateBio(bio: <span class="ty">string</span>) {
+    <span class="kw">if</span> (bio.length > <span class="num">500</span>)
+      <span class="kw">throw new</span> <span class="ty">Error</span>(<span class="str">"Too long"</span>);
+    <span class="kw">this</span>.bio = bio;
+  }
+  updateUsername(name: <span class="ty">string</span>) {
+    <span class="kw">if</span> (!name) <span class="kw">throw new</span> <span class="ty">Error</span>();
+    <span class="kw">this</span>.username = name;
+  }
+  setBio(v) { <span class="kw">this</span>.bio = v; }
+  setUsername(v) { <span class="kw">this</span>.username = v; }
+  get props() {
+    <span class="kw">return</span> <span class="ty">Object</span>.freeze({...<span class="kw">this</span>});
+  }
+  equals(o) {
+    <span class="kw">return this</span>.id === o.id;
+  }
+  <span class="cm">// ×20 entities = 900 lines
+  // Nobody writes this.
+  // They write: interface User {}</span>
+}</code></pre>
+    </div>
+    <div class="contrast-col">
+      <span class="contrast-label good">@sotajs/ddd — 3 fields of config</span>
+      <pre><code><span class="kw">const</span> <span class="ty">User</span> = <span class="fn">createEntity</span>({
+  <span class="kw">schema</span>: UserSchema,
+  <span class="kw">actions</span>: {
+    <span class="fn">updateBio</span>(state, bio) {
+      state.bio = bio;
+    },
+    <span class="fn">updateUsername</span>(state, n) {
+      state.username = n;
+    },
+  },
+  <span class="kw">computed</span>: {
+    <span class="fn">displayName</span>(props) {
+      <span class="kw">return</span> props.username;
+    },
+  },
+});
+<span class="cm">// deepFreeze — automatic
+// equals() — automatic
+// auto-setters — automatic
+// type inference — automatic</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ GAP 5: CULTURE ═══════════ -->
+<section>
+  <div class="gap-header">
+    <span class="gap-num">04</span>
+    <h2>Culture: <span style="font-weight:400">invariants are optional by default</span></h2>
+  </div>
+  <span class="gap-problem">Node ecosystem thinks in data transformations. Invariants live in if-statements scattered across services.</span>
+
+  <div class="row" style="margin-top:20px">
+    <div class="col">
+      <div class="chrome" style="margin-bottom:16px">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">without library — invariants are optional</span></div>
+        <pre><code><span class="cm">// OrderService.ts</span>
+<span class="kw">async</span> <span class="fn">addItem</span>(orderId, item) {
+  <span class="kw">const</span> order = <span class="kw">await</span> db.orders.<span class="fn">find</span>(orderId);
+  <span class="cm">// Did we check invariants? Maybe.
+  // Is this check in every service
+  // that mutates Order? Probably not.</span>
+  order.items.<span class="fn">push</span>(item);
+}
+
+<span class="cm">// CheckoutService.ts — different file
+// Same invariant? Different?
+// Six months: total ≠ sum(items)</span></code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="chrome" style="margin-bottom:16px">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">with @sotajs/ddd — required</span></div>
+        <pre><code><span class="kw">const</span> <span class="ty">Order</span> = <span class="fn">createAggregate</span>({
+  <span class="kw">schema</span>: OrderSchema,
+  <span class="kw">invariants</span>: [
+    (props) => {
+      <span class="kw">if</span> (props.items.length === <span class="num">0</span>)
+        <span class="kw">throw new</span> <span class="ty">Error</span>(
+          <span class="str">'Must have ≥ 1 item'</span>
+        );
+    },
+  ],
+  <span class="kw">actions</span>: {
+    <span class="fn">addItem</span>(state, item) {
+      state.items.<span class="fn">push</span>(item);
+    },
+  },
+});
+<span class="cm">// Invariants run on .create()
+// AND after every action.
+// Cannot forget. Cannot skip.</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="result">
+    <div class="result-item">
+      <h4>Required by TypeScript</h4>
+      <p><code>invariants</code> is not optional on <code>createAggregate</code>. The config won't compile without it. You cannot accidentally ship an aggregate with no rules.</p>
+    </div>
+    <div class="result-item">
+      <h4>Checked on every action</h4>
+      <p>Invariants run at <code>.create()</code> and after every action. You don't "remember to call validate." The library does it.</p>
+    </div>
+    <div class="result-item">
+      <h4>Single source of truth</h4>
+      <p>Change one business rule → change it in one place. Every action and every create picks it up automatically.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FULL EXAMPLE ═══════════ -->
+<section>
+  <p class="label">The whole picture</p>
+  <h2>One entity. From declaration to use case.</h2>
+  <p class="sub" style="margin-bottom:28px">
+    Your Zod schema. Your actions. Your computed properties. The library handles the rest.
+  </p>
+
+  <div class="row">
+    <div class="col">
+      <div class="small-label">Declaration</div>
+      <div class="chrome" style="margin-bottom:20px">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">user-profile.entity.ts</span></div>
+        <pre><code><span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+<span class="kw">import</span> { createEntity } <span class="kw">from</span> <span class="str">'@sotajs/ddd'</span>;
+
+<span class="kw">const</span> UserProfileSchema = z.<span class="fn">object</span>({
+  id: z.<span class="fn">string</span>().<span class="fn">uuid</span>(),
+  username: z.<span class="fn">string</span>(),
+  bio: z.<span class="fn">string</span>().<span class="fn">optional</span>(),
+});
+<span class="kw">type</span> <span class="ty">UserProfileProps</span> =
+  z.<span class="ty">infer</span>&lt;<span class="kw">typeof</span> UserProfileSchema&gt;;
+
+<span class="kw">export const</span> <span class="ty">UserProfile</span> = <span class="fn">createEntity</span>({
+  <span class="kw">schema</span>: UserProfileSchema,
+  <span class="kw">actions</span>: {
+    <span class="fn">updateUsername</span>(state, name) {
+      state.username = name;
+    },
+    <span class="fn">updateBio</span>(state, bio) {
+      state.bio = bio;
+    },
+  },
+  <span class="kw">computed</span>: {
+    <span class="fn">displayName</span>(props) {
+      <span class="kw">return</span> props.username;
+    },
+  },
+});
+<span class="kw">export type</span> <span class="ty">UserProfile</span> =
+  <span class="ty">ReturnType</span>&lt;<span class="kw">typeof</span> UserProfile.create&gt;;</code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="small-label">Usage in a command</div>
+      <div class="chrome">
+        <div class="chrome-bar"><span class="chrome-dot r"></span><span class="chrome-dot y"></span><span class="chrome-dot g"></span><span class="chrome-fname">update-profile.command.ts</span></div>
+        <pre><code><span class="cm">// Schema validates on create</span>
+<span class="kw">const</span> profile = <span class="ty">UserProfile</span>.<span class="fn">create</span>({
+  id: <span class="str">'b3f1ae2c-abcd'</span>,
+  username: <span class="str">'alice'</span>,
+});
+
+<span class="kw">export const</span> <span class="fn">updateProfile</span> = <span class="kw">async</span> (
+  userId: <span class="ty">string</span>, bio: <span class="ty">string</span>,
+) => {
+  <span class="kw">const</span> profile = <span class="kw">await</span> profiles
+    .<span class="fn">findById</span>(userId);
+
+  profile.actions.<span class="fn">updateBio</span>(bio);
+  <span class="kw">await</span> profiles.<span class="fn">save</span>(profile);
+
+  <span class="kw">return</span> {
+    id: profile.id,
+    displayName: profile.displayName,
+  };
+};</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ OBJECTIONS ═══════════ -->
+<section>
+  <p class="label">Your stack</p>
+  <h2>Four functions. Not a framework.</h2>
+  <div class="result" style="margin-top:20px">
+    <div class="result-item">
+      <h4>Works inside NestJS — or anything</h4>
+      <p>Your controllers, DI, and modules stay as they are. No decorators, no base classes, no new DI system.</p>
+    </div>
+    <div class="result-item">
+      <h4>One module at a time</h4>
+      <p>Replace <code>interface Order</code> with <code>createAggregate</code> in one service. The app doesn't notice. Try on Friday.</p>
+    </div>
+    <div class="result-item">
+      <h4>No new vocabulary</h4>
+      <p>You already write Zod schemas for DTOs. Actions are functions. Computed are getters. The library removes the boilerplate between them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta">
+  <pre><code>npm install @sotajs/ddd</code></pre>
+  <p>TypeScript ^5.0 · Zero dependencies · Works with Zod, ArkType, Valibot · <a href="https://github.com/kaizin-lab/sotajs-ddd">GitHub</a></p>
+</section>
+
+</body>
+</html>
