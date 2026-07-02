@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>What each of the four building blocks is</li>
+<li>How they differ and when to use each</li>
+<li>How they fit together in a real domain model</li>
+</ul>
+</blockquote>
+<p><code>@sotajs/ddd</code> gives you four functions. Each solves one problem in domain modeling.
+Here they are, side by side.</p>
+<hr/>
+<h2 id="entity">Entity</h2>
+<p><strong>An object with identity.</strong> Two entities are equal if they have the same <code>id</code>,
+even if all other fields differ. Entities have mutable state changed through actions.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createEntity } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  username: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">min</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">3</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">  emailVerified: z.</span><span style="color:#B392F0">boolean</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">default</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    verifyEmail</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Already verified&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  computed: {</span></span>
+<span class="line"><span style="color:#B392F0">    isVerified</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.emailVerified; },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> User.create&gt;;</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> alice</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc-123&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">alice.actions.</span><span style="color:#B392F0">verifyEmail</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">alice.props.emailVerified; </span><span style="color:#6A737D">// true</span></span>
+<span class="line"><span style="color:#E1E4E8">alice.isVerified;          </span><span style="color:#6A737D">// true — computed</span></span></code></pre>
+<p><strong>Use Entity for:</strong> User, Order, Product, Tenant — anything with its own identity
+that changes over time.</p>
+<p>→ <a href="/docs/guides/creating-entities/">Creating Entities</a></p>
+<hr/>
+<h2 id="value-object">Value Object</h2>
+<p><strong>An object defined by its value, not by identity.</strong> Two value objects with the
+same fields are equal. Value Objects are immutable — to “change” one, create a new instance.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createValueObject } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MoneySchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  amount: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  currency: z.</span><span style="color:#B392F0">enum</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;EUR&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;RUB&#39;</span><span style="color:#E1E4E8">]),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Money</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createValueObject</span><span style="color:#E1E4E8">({ schema: MoneySchema });</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> Money</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> Money.create&gt;;</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b); </span><span style="color:#6A737D">// true — same value</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> c</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;EUR&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(c); </span><span style="color:#6A737D">// false — different currency</span></span></code></pre>
+<p><strong>Use Value Object for:</strong> Money, Address, Email, Coordinate — anything defined by
+its attributes, with no independent lifecycle.</p>
+<p>→ <a href="/docs/guides/value-objects/">Value Objects</a></p>
+<hr/>
+<h2 id="brandedid">BrandedId</h2>
+<p><strong>A string at runtime, a unique type at compile time.</strong> Prevents mixing up
+<code>UserId</code> and <code>OrderId</code> — the compiler catches the swap.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createBrandedId } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> UserId.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;OrderId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> OrderId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> OrderId.create&gt;;</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> assignOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">userId</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">orderId</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">assignOrder</span><span style="color:#E1E4E8">(orderId, userId);</span></span>
+<span class="line"><span style="color:#6A737D">// TypeScript error: OrderId is not assignable to UserId</span></span></code></pre>
+<p><strong>Use BrandedId for:</strong> every entity identifier in function signatures, repository
+methods, and cross-entity references. Replace raw <code>string</code> with branded types everywhere.</p>
+<p>→ <a href="/docs/guides/branded-ids/">Branded IDs</a></p>
+<hr/>
+<h2 id="aggregate">Aggregate</h2>
+<p><strong>A transactional consistency boundary.</strong> Clusters entities together and enforces
+invariants on every mutation. <code>invariants</code> is required — TypeScript won’t compile without it.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createAggregate } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;Order&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: OrderSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  entities: {</span></span>
+<span class="line"><span style="color:#E1E4E8">    items: OrderItem,</span></span>
+<span class="line"><span style="color:#E1E4E8">    customerInfo: CustomerInfo,</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (props.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Order must have at least one item&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (props.status </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#F97583"> &amp;&amp;</span><span style="color:#E1E4E8"> props.amountPaid </span><span style="color:#F97583">&lt;=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Cannot confirm unpaid order&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  ],</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    ship</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.status </span><span style="color:#F97583">!==</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Not confirmed&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, status: </span><span style="color:#9ECBFF">&#39;pending&#39;</span><span style="color:#E1E4E8">, amountPaid: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  items: [{ productId: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, quantity: </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, price: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8"> }],</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">ship</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">(); </span><span style="color:#6A737D">// [{ aggregateId: &#39;...&#39;, timestamp: ... }]</span></span></code></pre>
+<p><strong>Use Aggregate for:</strong> Order (with items and customer), Reservation, Invoice —
+any cluster of entities with cross-field consistency rules.</p>
+<p>→ <a href="/docs/guides/aggregates/">Building Aggregates</a></p>
+<hr/>
+<h2 id="how-they-fit-together">How they fit together</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>BrandedId</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>Entity ──── composed of ──→ Value Object</span></span>
+<span class="line"><span>  ↓                            ↓</span></span>
+<span class="line"><span>Aggregate ←── nests ──── Entity</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>  ├── invariants (cross-field rules)</span></span>
+<span class="line"><span>  ├── actions (mutations + events)</span></span>
+<span class="line"><span>  └── .props → persistence</span></span></code></pre>
+<ul>
+<li><strong>Entity</strong> is the base block. Everything with identity is an Entity.</li>
+<li><strong>Value Object</strong> lives inside entities as fields — <code>Money</code>, <code>Address</code>, <code>Email</code>.</li>
+<li><strong>BrandedId</strong> types entity identifiers so you can’t mix them up.</li>
+<li><strong>Aggregate</strong> wraps entities and enforces invariants across them.</li>
+</ul>
+<h2 id="which-tool-when">Which tool when?</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>You have…</th><th>Use</th></tr></thead><tbody><tr><td>Something with an <code>id</code> that changes over time</td><td><code>createEntity</code></td></tr><tr><td>Something defined by its value, no identity</td><td><code>createValueObject</code></td></tr><tr><td>Entity IDs that shouldn’t be mixed up</td><td><code>createBrandedId</code></td></tr><tr><td>A cluster of entities with cross-field rules</td><td><code>createAggregate</code></td></tr></tbody></table>
+<h2 id="next">Next</h2>
+<p>Start the Essentials track to learn each concept in depth — with examples,
+anti-patterns, and hands-on exercises.</p>
+<p>→ <a href="/docs/guides/creating-entities/">Essentials: Creating Entities</a></p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
