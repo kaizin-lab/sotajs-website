@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Internals</div> <a href="/docs/how-it-works/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">How It Works</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>The type system trick behind BrandedId</li>
+<li>Why the brand field doesn’t exist at runtime</li>
+<li>How two branded types are made distinct</li>
+<li>Why this is zero-cost at runtime</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>This is a deep-dive page.</strong> For practical usage, start with
+<a href="/docs/guides/branded-ids/">Branded IDs</a>.</p>
+</blockquote>
+<h2 id="the-problem-structural-typing">The problem: structural typing</h2>
+<p>TypeScript uses structural typing. Two types are compatible if they have the same shape:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> OrderId</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &#39;abc-123&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#B392F0">getOrder</span><span style="color:#E1E4E8">(id); </span><span style="color:#6A737D">// compiles — UserId and OrderId are both string</span></span></code></pre>
+<p><code>UserId</code> and <code>OrderId</code> are aliases for the same type. TypeScript sees them as
+identical. The type system provides zero protection against cross-entity mix-ups.</p>
+<h2 id="the-solution-nominal-typing-via-intersection">The solution: nominal typing via intersection</h2>
+<p>BrandedId adds a <strong>brand</strong> — a unique type-level marker that doesn’t exist at runtime:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> BrandedId</span><span style="color:#E1E4E8">&lt;</span><span style="color:#B392F0">Brand</span><span style="color:#F97583"> extends</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">&gt; </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> string</span><span style="color:#F97583"> &amp;</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">__brand</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Brand</span><span style="color:#E1E4E8"> };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> BrandedId</span><span style="color:#E1E4E8">&lt;</span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">&gt;;   </span><span style="color:#6A737D">// string &amp; { __brand: &#39;UserId&#39; }</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> OrderId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> BrandedId</span><span style="color:#E1E4E8">&lt;</span><span style="color:#9ECBFF">&#39;OrderId&#39;</span><span style="color:#E1E4E8">&gt;; </span><span style="color:#6A737D">// string &amp; { __brand: &#39;OrderId&#39; }</span></span></code></pre>
+<p>Now TypeScript sees them as different types because their intersection includes
+different brand literals:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &#39;abc-123&#39;</span><span style="color:#F97583"> as</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#B392F0">getOrder</span><span style="color:#E1E4E8">(id);</span></span>
+<span class="line"><span style="color:#6A737D">// TypeScript error: Type &#39;string &amp; { __brand: &quot;UserId&quot; }&#39;</span></span>
+<span class="line"><span style="color:#6A737D">// is not assignable to type &#39;string &amp; { __brand: &quot;OrderId&quot; }&#39;</span></span></code></pre>
+<blockquote>
+<p>The <code>__brand</code> field exists <strong>only in the type system</strong>. It’s never present at runtime.
+This is a compile-time trick with zero runtime cost.</p>
+</blockquote>
+<h2 id="the-brand-is-a-ghost">The brand is a ghost</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> userId</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> UserId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> userId;          </span><span style="color:#6A737D">// &#39;string&#39; — it&#39;s just a string</span></span>
+<span class="line"><span style="color:#E1E4E8">userId.__brand;         </span><span style="color:#6A737D">// TypeScript error — property doesn&#39;t exist</span></span>
+<span class="line"><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">(userId); </span><span style="color:#6A737D">// &#39;&quot;b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3&quot;&#39;</span></span></code></pre>
+<p>The brand exists in the type system to make types distinct. At runtime, it’s
+a plain string — serializable, comparable, passable to any API expecting a string.</p>
+<h2 id="what-createbrandedid-does">What <code>createBrandedId</code> does</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span></code></pre>
+<p>At definition time:</p>
+<ol>
+<li>Creates the branded type: <code>string &amp; { __brand: &#39;UserId&#39; }</code></li>
+<li>Attaches the Zod schema for validation</li>
+</ol>
+<p>At <code>.create()</code> time:</p>
+<ol>
+<li>Runs <code>schema.parse(value)</code> — Zod validation</li>
+<li>Returns the value cast to the branded type</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">UserId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;not-a-uuid&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// throws ZodError</span></span>
+<span class="line"><span style="color:#E1E4E8">UserId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;b3f1...&#39;</span><span style="color:#E1E4E8">);    </span><span style="color:#6A737D">// returns string, typed as UserId</span></span></code></pre>
+<h2 id="why-the-schema-matters">Why the schema matters</h2>
+<p>Without a schema, <code>createBrandedId</code> is just a type cast:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"><span style="color:#E1E4E8">UserId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;admin&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// ok — any string passes</span></span></code></pre>
+<p>With a narrow schema, invalid values are caught at creation time:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"><span style="color:#E1E4E8">UserId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;admin&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// throws — not a UUID</span></span></code></pre>
+<blockquote>
+<p>The schema is the runtime gate. The brand is the compile-time gate.
+Both together give you safety at both levels.</p>
+</blockquote>
+<hr/>
+<h2 id="what-youve-learned">What you’ve learned</h2>
+<p><strong>BrandedId uses nominal typing via brand intersection.</strong> <code>string &amp; { __brand: &#39;UserId&#39; }</code>
+and <code>string &amp; { __brand: &#39;OrderId&#39; }</code> are distinct types because their brand
+literals differ. Structural typing is bypassed.</p>
+<p><strong>The brand is a TypeScript ghost.</strong> It never exists at runtime. A BrandedId IS
+a string — serializable, comparable, zero overhead.</p>
+<p><strong><code>createBrandedId</code> combines type branding with Zod validation.</strong> The schema
+catches invalid values at runtime. The brand catches cross-entity mix-ups at
+compile time. Together they make <code>string</code> safe.</p>
+<h2 id="whats-next">What’s next?</h2>
+<p>You’ve completed the internals track. For rules on writing idiomatic code with
+the library, see the <strong>Style Guide</strong>.</p>
+<p>→ <a href="/docs/style-guide/">Style Guide</a> (coming soon)
+→ <a href="/docs/guides/">Back to Essentials</a></p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

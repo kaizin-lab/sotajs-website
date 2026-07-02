@@ -1,0 +1,96 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Internals</div> <a href="/docs/how-it-works/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">How It Works</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>What <code>createEntity</code> does with your Zod schema</li>
+<li>How auto-setters are discovered and generated</li>
+<li>Why <code>props</code> is frozen and what that protects</li>
+<li>How <code>.equals()</code> works with identity</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>This is a deep-dive page.</strong> It explains internals so you understand the guarantees.
+For production usage, start with <a href="/docs/guides/creating-entities/">Creating Entities</a>.</p>
+</blockquote>
+<h2 id="the-createentity-pipeline">The <code>createEntity</code> pipeline</h2>
+<p>When you call <code>createEntity({ schema, actions, computed })</code>, the library does three things:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>Zod schema</span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    ├─→ Type inference      → UserProps type</span></span>
+<span class="line"><span>    ├─→ Auto-setter generation → setField() for each non-id field</span></span>
+<span class="line"><span>    └─→ Runtime validation  → .create() calls schema.parse()</span></span></code></pre>
+<p>At definition time (module load): type inference + auto-setter discovery.
+At runtime (<code>.create()</code> call): validation + freeze + identity.</p>
+<h2 id="auto-setter-discovery">Auto-setter discovery</h2>
+<p>Auto-setters are generated from <code>schema.shape</code> — the Zod schema’s field definitions.
+The library iterates over every key in the shape and generates a typed setter:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Schema:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  username: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  age: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Auto-generated (conceptual):</span></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#B392F0">  setUsername</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">value</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> { draft.username </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> value },</span></span>
+<span class="line"><span style="color:#B392F0">  setAge</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">value</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> number</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> { draft.age </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> value },</span></span>
+<span class="line"><span style="color:#6A737D">  // setID — NOT generated (id field is skipped)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>The <code>id</code> field is excluded because entity identity should never change after creation.
+Fields from <code>.default()</code>, <code>.optional()</code>, and refined types all generate typed setters.</p>
+<blockquote>
+<p><strong>Not magic.</strong> The library reads <code>schema.shape</code> at definition time — a plain object
+with ZodType values. It maps field names to setter functions. No runtime code generation,
+no eval, no Proxy tricks.</p>
+</blockquote>
+<h2 id="why-props-is-frozen">Why props is frozen</h2>
+<p>After <code>.create()</code> and after every action, the entity’s state is <code>Object.freeze()</code>’d:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.props.username </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;hacker&#39;</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// TypeError in strict mode</span></span></code></pre>
+<p>This is a <strong>debug-time guard</strong>, not a security boundary. It catches accidental
+mutation — the most common source of “how did this value change?” bugs in domain logic.</p>
+<p>During actions, state is a mutable draft. The library:</p>
+<ol>
+<li>Creates a shallow copy of the frozen state</li>
+<li>Passes the mutable draft to your action</li>
+<li>Freezes the result and replaces the internal state</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>frozen props → shallow copy (mutable draft) → action mutates draft → freeze → new props</span></span></code></pre>
+<blockquote>
+<p><strong>Frozen objects don’t freeze nested arrays/objects.</strong> <code>Object.freeze()</code> is shallow.
+Mutating <code>user.props.tags.push(&#39;x&#39;)</code> won’t throw — but don’t do it. Use actions
+for all mutations.</p>
+</blockquote>
+<h2 id="identity-how-equals-works">Identity: how <code>.equals()</code> works</h2>
+<p>Entities compare by the <code>id</code> field:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;bob&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b); </span><span style="color:#6A737D">// true — same id</span></span></code></pre>
+<p>The <code>.equals()</code> method compares <code>this.props.id === other.props.id</code>. That’s it.
+No deep comparison, no structural equality — identity is the id field.</p>
+<p>This is why <code>id</code> is required in every entity schema. Without identity, an object
+with mutable state is just a bag of values — not an entity.</p>
+<h2 id="what-createentity-returns">What <code>createEntity</code> returns</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#B392F0">  create</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> Entity,    </span><span style="color:#6A737D">// validate + freeze + return instance</span></span>
+<span class="line"><span style="color:#B392F0">  schema</span><span style="color:#E1E4E8">: ZodSchema,             </span><span style="color:#6A737D">// the original schema</span></span>
+<span class="line"><span style="color:#6A737D">  // The instance has:</span></span>
+<span class="line"><span style="color:#6A737D">  //   .props       — frozen state snapshot</span></span>
+<span class="line"><span style="color:#6A737D">  //   .actions     — auto-setters + your custom actions</span></span>
+<span class="line"><span style="color:#6A737D">  //   .equals()    — identity comparison</span></span>
+<span class="line"><span style="color:#6A737D">  //   .displayName — computed properties (if defined)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<hr/>
+<h2 id="what-youve-learned">What you’ve learned</h2>
+<p><strong><code>createEntity</code> is three passes.</strong> At definition time: type inference + auto-setter
+discovery from <code>schema.shape</code>. At runtime: Zod validation + freeze + identity.</p>
+<p><strong>Auto-setters come from <code>schema.shape</code>.</strong> Every non-<code>id</code> field gets a typed setter.
+No code generation, no eval — plain mapping of field names to functions.</p>
+<p><strong>Props is frozen as a debug guard.</strong> It catches accidental mutation. During actions,
+state is a mutable draft — frozen only after the action returns.</p>
+<p><strong>Identity is the <code>id</code> field.</strong> <code>.equals()</code> compares <code>this.props.id === other.props.id</code>.
+No deep comparison. An entity IS its identity.</p>
+<h2 id="whats-next">What’s next?</h2>
+<p>Aggregates add another layer: invariants that run after every action, auto-hydrated
+nested entities, and a pull-based event queue. <strong>How Aggregates Work</strong> covers the mechanics.</p>
+<p>→ <a href="/docs/how-it-works/aggregate-mechanics/">How Aggregates Work</a></p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Internals</div> <a href="/docs/how-it-works/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">How It Works</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>When and how invariants execute</li>
+<li>How nested entities are hydrated from plain objects</li>
+<li>The pull-based event queue mechanism</li>
+<li>Why auto-setters don’t trigger invariant checks</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>This is a deep-dive page.</strong> For production patterns, start with
+<a href="/docs/guides/aggregates/">Building Aggregates</a>.</p>
+</blockquote>
+<h2 id="the-invariant-execution-model">The invariant execution model</h2>
+<p>Invariants run at two points:</p>
+<ol>
+<li><strong><code>.create(props)</code></strong> — before the instance is returned</li>
+<li><strong>After every action</strong> — all invariants, not just “relevant” ones</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>.create(props)</span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    ├─→ Zod validation</span></span>
+<span class="line"><span>    ├─→ Hydrate nested entities</span></span>
+<span class="line"><span>    ├─→ Run ALL invariants    ← if any throw, no instance returned</span></span>
+<span class="line"><span>    └─→ Return aggregate instance</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>action(state)</span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    ├─→ Mutable draft of current state</span></span>
+<span class="line"><span>    ├─→ Your action code runs</span></span>
+<span class="line"><span>    ├─→ Run ALL invariants    ← all of them, every time</span></span>
+<span class="line"><span>    ├─→ Freeze new state</span></span>
+<span class="line"><span>    └─→ Return (event if provided)</span></span></code></pre>
+<blockquote>
+<p><strong>Why all invariants?</strong> Because invariants don’t guess which action changed which
+field. “Total must match sum of item prices” runs after <code>confirm()</code>, <code>ship()</code>,
+and every other action — even if those actions don’t touch <code>items</code> or <code>total</code>.</p>
+</blockquote>
+<p>This is the <strong>guarantee</strong> that makes Aggregate different from Entity. You write
+invariants once, and the library enforces them on every mutation.</p>
+<h2 id="why-auto-setters-dont-trigger-invariants">Why auto-setters don’t trigger invariants</h2>
+<p>Auto-setters mutate state directly without running invariants:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">setAmountPaid</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);    </span><span style="color:#6A737D">// no invariant check</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">setStatus</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;bogus&#39;</span><span style="color:#E1E4E8">);  </span><span style="color:#6A737D">// no invariant check</span></span></code></pre>
+<p>Invariants only run on <code>.create()</code> and after custom actions. This is intentional:
+auto-setters are for simple field assignment. If you need invariant-protected
+mutation, write an action.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// After auto-setter abuse:</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">setAmountPaid</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">confirm</span><span style="color:#E1E4E8">(); </span><span style="color:#6A737D">// ← invariants catch the broken state</span></span></code></pre>
+<blockquote>
+<p>The next action always catches invariant violations from auto-setters.
+This is why the invariant “all actions” guarantee matters — it catches
+intermediate invalid states before they persist.</p>
+</blockquote>
+<h2 id="nested-entity-hydration">Nested entity hydration</h2>
+<p>Entities declared in <code>entities</code> are auto-hydrated from plain objects:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  entities: {</span></span>
+<span class="line"><span style="color:#E1E4E8">    items: OrderItem,</span></span>
+<span class="line"><span style="color:#E1E4E8">    customerInfo: CustomerInfo,</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#6A737D">  // ...</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>When you call <code>.create()</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>Plain object: { productId: &#39;...&#39;, quantity: 2, price: 50 }</span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    └─→ OrderItem.create(plainObject)</span></span>
+<span class="line"><span>         │</span></span>
+<span class="line"><span>         └─→ Entity instance with .props, .actions, .equals()</span></span></code></pre>
+<p>Each nested object passes through the entity’s <code>create()</code> — Zod validation,
+freeze, identity. The result is a real entity instance.</p>
+<p>On <code>.props</code> read:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>Entity instance → dehydrated to plain object → ready for JSON.stringify()</span></span></code></pre>
+<p>This is why <code>.state</code> exists separately from <code>.props</code>. <code>.state</code> returns hydrated
+entity instances. <code>.props</code> returns dehydrated plain objects.</p>
+<h2 id="the-pull-based-event-queue">The pull-based event queue</h2>
+<p>Actions in aggregates can return <code>{ event }</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Events accumulate in an internal queue:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>action1 → event1 → queue: [event1]</span></span>
+<span class="line"><span>action2 → event2 → queue: [event1, event2]</span></span>
+<span class="line"><span>action3 → (no event) → queue: [event1, event2]</span></span></code></pre>
+<p>You pull them explicitly:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// events: [{ aggregateId: &#39;...&#39;, timestamp: ... }, ...]</span></span>
+<span class="line"><span style="color:#6A737D">// queue is now empty</span></span></code></pre>
+<blockquote>
+<p><strong>Pull-based by design.</strong> The aggregate produces events. The application layer
+dispatches them. No hidden side effects — if you don’t pull, nothing fires.
+This makes the aggregate testable without mocking an event bus.</p>
+</blockquote>
+<hr/>
+<h2 id="what-youve-learned">What you’ve learned</h2>
+<p><strong>Invariants run on <code>.create()</code> and after every action.</strong> All invariants, every
+time — not just the ones that seem “relevant.” This is the core guarantee of Aggregate.</p>
+<p><strong>Auto-setters bypass invariants.</strong> The next action catches the broken state.
+Write an action if you need invariant-protected mutation.</p>
+<p><strong>Nested entities are hydrated through their own <code>.create()</code>.</strong> Zod validation,
+freeze, identity — the full entity lifecycle applies to nested objects. <code>.props</code>
+dehydrates them back to plain objects.</p>
+<p><strong>Events are pull-based.</strong> Return <code>{ event }</code> from actions. Events queue up.
+Call <code>getPendingEvents()</code> to retrieve and clear the queue. No hidden dispatch.</p>
+<h2 id="whats-next">What’s next?</h2>
+<p>BrandedId looks like a string but behaves like a distinct type. <strong>How BrandedId
+Types Work</strong> covers the nominal typing trick — the brand as a TypeScript ghost field.</p>
+<p>→ <a href="/docs/how-it-works/brandedid-types/">How BrandedId Types Work</a></p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
