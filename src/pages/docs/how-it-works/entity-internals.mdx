@@ -1,0 +1,135 @@
+---
+title: "How Entities Work"
+description: "Under the hood: freeze, auto-setters, identity — what createEntity actually does"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - What `createEntity` does with your Zod schema
+> - How auto-setters are discovered and generated
+> - Why `props` is frozen and what that protects
+> - How `.equals()` works with identity
+
+> **This is a deep-dive page.** It explains internals so you understand the guarantees.
+> For production usage, start with [Creating Entities](/docs/guides/creating-entities/).
+
+## The `createEntity` pipeline
+
+When you call `createEntity({ schema, actions, computed })`, the library does three things:
+
+```
+Zod schema
+    │
+    ├─→ Type inference      → UserProps type
+    ├─→ Auto-setter generation → setField() for each non-id field
+    └─→ Runtime validation  → .create() calls schema.parse()
+```
+
+At definition time (module load): type inference + auto-setter discovery.
+At runtime (`.create()` call): validation + freeze + identity.
+
+## Auto-setter discovery
+
+Auto-setters are generated from `schema.shape` — the Zod schema's field definitions.
+The library iterates over every key in the shape and generates a typed setter:
+
+```ts
+// Schema:
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  age: z.number(),
+});
+
+// Auto-generated (conceptual):
+{
+  setUsername: (value: string) => { draft.username = value },
+  setAge: (value: number) => { draft.age = value },
+  // setID — NOT generated (id field is skipped)
+}
+```
+
+The `id` field is excluded because entity identity should never change after creation.
+Fields from `.default()`, `.optional()`, and refined types all generate typed setters.
+
+> **Not magic.** The library reads `schema.shape` at definition time — a plain object
+> with ZodType values. It maps field names to setter functions. No runtime code generation,
+> no eval, no Proxy tricks.
+
+## Why props is frozen
+
+After `.create()` and after every action, the entity's state is `Object.freeze()`'d:
+
+```ts
+user.props.username = 'hacker'; // TypeError in strict mode
+```
+
+This is a **debug-time guard**, not a security boundary. It catches accidental
+mutation — the most common source of "how did this value change?" bugs in domain logic.
+
+During actions, state is a mutable draft. The library:
+1. Creates a shallow copy of the frozen state
+2. Passes the mutable draft to your action
+3. Freezes the result and replaces the internal state
+
+```
+frozen props → shallow copy (mutable draft) → action mutates draft → freeze → new props
+```
+
+> **Frozen objects don't freeze nested arrays/objects.** `Object.freeze()` is shallow.
+> Mutating `user.props.tags.push('x')` won't throw — but don't do it. Use actions
+> for all mutations.
+
+## Identity: how `.equals()` works
+
+Entities compare by the `id` field:
+
+```ts
+const a = User.create({ id: 'abc', username: 'alice' });
+const b = User.create({ id: 'abc', username: 'bob' });
+
+a.equals(b); // true — same id
+```
+
+The `.equals()` method compares `this.props.id === other.props.id`. That's it.
+No deep comparison, no structural equality — identity is the id field.
+
+This is why `id` is required in every entity schema. Without identity, an object
+with mutable state is just a bag of values — not an entity.
+
+## What `createEntity` returns
+
+```ts
+{
+  create: (props) => Entity,    // validate + freeze + return instance
+  schema: ZodSchema,             // the original schema
+  // The instance has:
+  //   .props       — frozen state snapshot
+  //   .actions     — auto-setters + your custom actions
+  //   .equals()    — identity comparison
+  //   .displayName — computed properties (if defined)
+}
+```
+
+---
+
+## What you've learned
+
+**`createEntity` is three passes.** At definition time: type inference + auto-setter
+discovery from `schema.shape`. At runtime: Zod validation + freeze + identity.
+
+**Auto-setters come from `schema.shape`.** Every non-`id` field gets a typed setter.
+No code generation, no eval — plain mapping of field names to functions.
+
+**Props is frozen as a debug guard.** It catches accidental mutation. During actions,
+state is a mutable draft — frozen only after the action returns.
+
+**Identity is the `id` field.** `.equals()` compares `this.props.id === other.props.id`.
+No deep comparison. An entity IS its identity.
+
+## What's next?
+
+Aggregates add another layer: invariants that run after every action, auto-hydrated
+nested entities, and a pull-based event queue. **How Aggregates Work** covers the mechanics.
+
+→ [How Aggregates Work](/docs/how-it-works/aggregate-mechanics/)

@@ -1,0 +1,32 @@
+---
+title: "How It Works"
+description: "Under the hood — understand the mechanics behind the guarantees"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+> **This section explains internals.** Not required reading for using the library
+> in production. But if you want to understand *why* the guarantees hold, start here.
+
+Each page covers one concept's mechanics — what the library actually does with
+your code, and why it's designed that way.
+
+1. [How Entities Work](/docs/how-it-works/entity-internals/) — freeze, auto-setter discovery, identity, the `createEntity` pipeline
+
+2. [How Aggregates Work](/docs/how-it-works/aggregate-mechanics/) — invariant execution model, nested entity hydration, pull-based event queue
+
+3. [How BrandedId Types Work](/docs/how-it-works/brandedid-types/) — nominal typing via brand intersection, the ghost field, zero runtime cost
+
+---
+
+## Not magic
+
+Every guarantee in `@sotajs/ddd` comes from a straightforward mechanism:
+
+- Auto-setters → reading `schema.shape` at definition time
+- Frozen props → `Object.freeze()` after creation and after every action
+- Identity comparison → `this.props.id === other.props.id`
+- Invariants → called after `.create()` and after every action
+- Branded types → TypeScript intersection with a literal string type
+
+No code generation. No eval. No Proxy. No decorators. Plain JavaScript with
+TypeScript types.

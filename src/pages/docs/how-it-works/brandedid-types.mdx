@@ -1,0 +1,133 @@
+---
+title: "How BrandedId Types Work"
+description: "Under the hood: nominal typing with a ghost field — compile-time safety, zero runtime cost"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - The type system trick behind BrandedId
+> - Why the brand field doesn't exist at runtime
+> - How two branded types are made distinct
+> - Why this is zero-cost at runtime
+
+> **This is a deep-dive page.** For practical usage, start with
+> [Branded IDs](/docs/guides/branded-ids/).
+
+## The problem: structural typing
+
+TypeScript uses structural typing. Two types are compatible if they have the same shape:
+
+```ts
+type UserId = string;
+type OrderId = string;
+
+function getUser(id: UserId) { ... }
+function getOrder(id: OrderId) { ... }
+
+const id: UserId = 'abc-123';
+getOrder(id); // compiles — UserId and OrderId are both string
+```
+
+`UserId` and `OrderId` are aliases for the same type. TypeScript sees them as
+identical. The type system provides zero protection against cross-entity mix-ups.
+
+## The solution: nominal typing via intersection
+
+BrandedId adds a **brand** — a unique type-level marker that doesn't exist at runtime:
+
+```ts
+type BrandedId<Brand extends string> = string & { __brand: Brand };
+
+type UserId = BrandedId<'UserId'>;   // string & { __brand: 'UserId' }
+type OrderId = BrandedId<'OrderId'>; // string & { __brand: 'OrderId' }
+```
+
+Now TypeScript sees them as different types because their intersection includes
+different brand literals:
+
+```ts
+function getUser(id: UserId) { ... }
+function getOrder(id: OrderId) { ... }
+
+const id: UserId = 'abc-123' as UserId;
+getOrder(id);
+// TypeScript error: Type 'string & { __brand: "UserId" }'
+// is not assignable to type 'string & { __brand: "OrderId" }'
+```
+
+> The `__brand` field exists **only in the type system**. It's never present at runtime.
+> This is a compile-time trick with zero runtime cost.
+
+## The brand is a ghost
+
+```ts
+const userId = UserId.create('b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3');
+
+typeof userId;          // 'string' — it's just a string
+userId.__brand;         // TypeScript error — property doesn't exist
+JSON.stringify(userId); // '"b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3"'
+```
+
+The brand exists in the type system to make types distinct. At runtime, it's
+a plain string — serializable, comparable, passable to any API expecting a string.
+
+## What `createBrandedId` does
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+```
+
+At definition time:
+1. Creates the branded type: `string & { __brand: 'UserId' }`
+2. Attaches the Zod schema for validation
+
+At `.create()` time:
+1. Runs `schema.parse(value)` — Zod validation
+2. Returns the value cast to the branded type
+
+```ts
+UserId.create('not-a-uuid'); // throws ZodError
+UserId.create('b3f1...');    // returns string, typed as UserId
+```
+
+## Why the schema matters
+
+Without a schema, `createBrandedId` is just a type cast:
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string() });
+UserId.create('admin'); // ok — any string passes
+```
+
+With a narrow schema, invalid values are caught at creation time:
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+UserId.create('admin'); // throws — not a UUID
+```
+
+> The schema is the runtime gate. The brand is the compile-time gate.
+> Both together give you safety at both levels.
+
+---
+
+## What you've learned
+
+**BrandedId uses nominal typing via brand intersection.** `string & { __brand: 'UserId' }`
+and `string & { __brand: 'OrderId' }` are distinct types because their brand
+literals differ. Structural typing is bypassed.
+
+**The brand is a TypeScript ghost.** It never exists at runtime. A BrandedId IS
+a string — serializable, comparable, zero overhead.
+
+**`createBrandedId` combines type branding with Zod validation.** The schema
+catches invalid values at runtime. The brand catches cross-entity mix-ups at
+compile time. Together they make `string` safe.
+
+## What's next?
+
+You've completed the internals track. For rules on writing idiomatic code with
+the library, see the **Style Guide**.
+
+→ [Style Guide](/docs/style-guide/) (coming soon)
+→ [Back to Essentials](/docs/guides/)

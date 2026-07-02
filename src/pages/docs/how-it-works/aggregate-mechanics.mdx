@@ -1,0 +1,159 @@
+---
+title: "How Aggregates Work"
+description: "Under the hood: invariants execution, nested entity hydration, event queue"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - When and how invariants execute
+> - How nested entities are hydrated from plain objects
+> - The pull-based event queue mechanism
+> - Why auto-setters don't trigger invariant checks
+
+> **This is a deep-dive page.** For production patterns, start with
+> [Building Aggregates](/docs/guides/aggregates/).
+
+## The invariant execution model
+
+Invariants run at two points:
+1. **`.create(props)`** — before the instance is returned
+2. **After every action** — all invariants, not just "relevant" ones
+
+```
+.create(props)
+    │
+    ├─→ Zod validation
+    ├─→ Hydrate nested entities
+    ├─→ Run ALL invariants    ← if any throw, no instance returned
+    └─→ Return aggregate instance
+
+action(state)
+    │
+    ├─→ Mutable draft of current state
+    ├─→ Your action code runs
+    ├─→ Run ALL invariants    ← all of them, every time
+    ├─→ Freeze new state
+    └─→ Return (event if provided)
+```
+
+> **Why all invariants?** Because invariants don't guess which action changed which
+> field. "Total must match sum of item prices" runs after `confirm()`, `ship()`,
+> and every other action — even if those actions don't touch `items` or `total`.
+
+This is the **guarantee** that makes Aggregate different from Entity. You write
+invariants once, and the library enforces them on every mutation.
+
+## Why auto-setters don't trigger invariants
+
+Auto-setters mutate state directly without running invariants:
+
+```ts
+order.actions.setAmountPaid(0);    // no invariant check
+order.actions.setStatus('bogus');  // no invariant check
+```
+
+Invariants only run on `.create()` and after custom actions. This is intentional:
+auto-setters are for simple field assignment. If you need invariant-protected
+mutation, write an action.
+
+```ts
+// After auto-setter abuse:
+order.actions.setAmountPaid(0);
+order.actions.confirm(); // ← invariants catch the broken state
+```
+
+> The next action always catches invariant violations from auto-setters.
+> This is why the invariant "all actions" guarantee matters — it catches
+> intermediate invalid states before they persist.
+
+## Nested entity hydration
+
+Entities declared in `entities` are auto-hydrated from plain objects:
+
+```ts
+const Order = createAggregate({
+  entities: {
+    items: OrderItem,
+    customerInfo: CustomerInfo,
+  },
+  // ...
+});
+```
+
+When you call `.create()`:
+
+```
+Plain object: { productId: '...', quantity: 2, price: 50 }
+    │
+    └─→ OrderItem.create(plainObject)
+         │
+         └─→ Entity instance with .props, .actions, .equals()
+```
+
+Each nested object passes through the entity's `create()` — Zod validation,
+freeze, identity. The result is a real entity instance.
+
+On `.props` read:
+```
+Entity instance → dehydrated to plain object → ready for JSON.stringify()
+```
+
+This is why `.state` exists separately from `.props`. `.state` returns hydrated
+entity instances. `.props` returns dehydrated plain objects.
+
+## The pull-based event queue
+
+Actions in aggregates can return `{ event }`:
+
+```ts
+actions: {
+  ship(state) {
+    state.status = 'shipped';
+    return { event: { aggregateId: state.id, timestamp: new Date() } };
+  },
+}
+```
+
+Events accumulate in an internal queue:
+
+```
+action1 → event1 → queue: [event1]
+action2 → event2 → queue: [event1, event2]
+action3 → (no event) → queue: [event1, event2]
+```
+
+You pull them explicitly:
+
+```ts
+const events = order.getPendingEvents();
+// events: [{ aggregateId: '...', timestamp: ... }, ...]
+// queue is now empty
+```
+
+> **Pull-based by design.** The aggregate produces events. The application layer
+> dispatches them. No hidden side effects — if you don't pull, nothing fires.
+> This makes the aggregate testable without mocking an event bus.
+
+---
+
+## What you've learned
+
+**Invariants run on `.create()` and after every action.** All invariants, every
+time — not just the ones that seem "relevant." This is the core guarantee of Aggregate.
+
+**Auto-setters bypass invariants.** The next action catches the broken state.
+Write an action if you need invariant-protected mutation.
+
+**Nested entities are hydrated through their own `.create()`.** Zod validation,
+freeze, identity — the full entity lifecycle applies to nested objects. `.props`
+dehydrates them back to plain objects.
+
+**Events are pull-based.** Return `{ event }` from actions. Events queue up.
+Call `getPendingEvents()` to retrieve and clear the queue. No hidden dispatch.
+
+## What's next?
+
+BrandedId looks like a string but behaves like a distinct type. **How BrandedId
+Types Work** covers the nominal typing trick — the brand as a TypeScript ghost field.
+
+→ [How BrandedId Types Work](/docs/how-it-works/brandedid-types/)
