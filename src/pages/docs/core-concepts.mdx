@@ -1,0 +1,208 @@
+---
+title: "Core Concepts"
+description: "Entity, Value Object, BrandedId, Aggregate — all four building blocks in one place"
+layout: ../../layouts/DocsLayout.astro
+---
+
+> **What you'll learn**
+> - What each of the four building blocks is
+> - How they differ and when to use each
+> - How they fit together in a real domain model
+
+`@sotajs/ddd` gives you four functions. Each solves one problem in domain modeling.
+Here they are, side by side.
+
+---
+
+## Entity
+
+**An object with identity.** Two entities are equal if they have the same `id`,
+even if all other fields differ. Entities have mutable state changed through actions.
+
+```ts
+import { z } from 'zod';
+import { createEntity } from '@sotajs/ddd';
+
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string().min(3),
+  emailVerified: z.boolean().default(false),
+});
+
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    verifyEmail(state) {
+      if (state.emailVerified) throw new Error('Already verified');
+      state.emailVerified = true;
+    },
+  },
+  computed: {
+    isVerified(props) { return props.emailVerified; },
+  },
+});
+type User = ReturnType<typeof User.create>;
+```
+
+```ts
+const alice = User.create({ id: 'abc-123', username: 'alice' });
+alice.actions.verifyEmail();
+alice.props.emailVerified; // true
+alice.isVerified;          // true — computed
+```
+
+**Use Entity for:** User, Order, Product, Tenant — anything with its own identity
+that changes over time.
+
+→ [Creating Entities](/docs/guides/creating-entities/)
+
+---
+
+## Value Object
+
+**An object defined by its value, not by identity.** Two value objects with the
+same fields are equal. Value Objects are immutable — to "change" one, create a new instance.
+
+```ts
+import { createValueObject } from '@sotajs/ddd';
+
+const MoneySchema = z.object({
+  amount: z.number().positive(),
+  currency: z.enum(['USD', 'EUR', 'RUB']),
+});
+
+const Money = createValueObject({ schema: MoneySchema });
+type Money = ReturnType<typeof Money.create>;
+```
+
+```ts
+const a = Money.create({ amount: 100, currency: 'USD' });
+const b = Money.create({ amount: 100, currency: 'USD' });
+a.equals(b); // true — same value
+
+const c = Money.create({ amount: 100, currency: 'EUR' });
+a.equals(c); // false — different currency
+```
+
+**Use Value Object for:** Money, Address, Email, Coordinate — anything defined by
+its attributes, with no independent lifecycle.
+
+→ [Value Objects](/docs/guides/value-objects/)
+
+---
+
+## BrandedId
+
+**A string at runtime, a unique type at compile time.** Prevents mixing up
+`UserId` and `OrderId` — the compiler catches the swap.
+
+```ts
+import { createBrandedId } from '@sotajs/ddd';
+
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+type UserId = ReturnType<typeof UserId.create>;
+
+const OrderId = createBrandedId({ brand: 'OrderId', schema: z.string().uuid() });
+type OrderId = ReturnType<typeof OrderId.create>;
+```
+
+```ts
+function assignOrder(userId: UserId, orderId: OrderId) { ... }
+
+assignOrder(orderId, userId);
+// TypeScript error: OrderId is not assignable to UserId
+```
+
+**Use BrandedId for:** every entity identifier in function signatures, repository
+methods, and cross-entity references. Replace raw `string` with branded types everywhere.
+
+→ [Branded IDs](/docs/guides/branded-ids/)
+
+---
+
+## Aggregate
+
+**A transactional consistency boundary.** Clusters entities together and enforces
+invariants on every mutation. `invariants` is required — TypeScript won't compile without it.
+
+```ts
+import { createAggregate } from '@sotajs/ddd';
+
+const Order = createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  entities: {
+    items: OrderItem,
+    customerInfo: CustomerInfo,
+  },
+  invariants: [
+    (props) => {
+      if (props.items.length === 0)
+        throw new Error('Order must have at least one item');
+    },
+    (props) => {
+      if (props.status === 'confirmed' && props.amountPaid <= 0)
+        throw new Error('Cannot confirm unpaid order');
+    },
+  ],
+  actions: {
+    ship(state) {
+      if (state.status !== 'confirmed') throw new Error('Not confirmed');
+      state.status = 'shipped';
+      return { event: { aggregateId: state.id, timestamp: new Date() } };
+    },
+  },
+});
+```
+
+```ts
+const order = Order.create({
+  id: '...', status: 'pending', amountPaid: 0,
+  items: [{ productId: '...', quantity: 1, price: 100 }],
+});
+
+order.actions.ship();
+order.getPendingEvents(); // [{ aggregateId: '...', timestamp: ... }]
+```
+
+**Use Aggregate for:** Order (with items and customer), Reservation, Invoice —
+any cluster of entities with cross-field consistency rules.
+
+→ [Building Aggregates](/docs/guides/aggregates/)
+
+---
+
+## How they fit together
+
+```
+BrandedId
+  ↓
+Entity ──── composed of ──→ Value Object
+  ↓                            ↓
+Aggregate ←── nests ──── Entity
+  ↓
+  ├── invariants (cross-field rules)
+  ├── actions (mutations + events)
+  └── .props → persistence
+```
+
+- **Entity** is the base block. Everything with identity is an Entity.
+- **Value Object** lives inside entities as fields — `Money`, `Address`, `Email`.
+- **BrandedId** types entity identifiers so you can't mix them up.
+- **Aggregate** wraps entities and enforces invariants across them.
+
+## Which tool when?
+
+| You have... | Use |
+|---|---|
+| Something with an `id` that changes over time | `createEntity` |
+| Something defined by its value, no identity | `createValueObject` |
+| Entity IDs that shouldn't be mixed up | `createBrandedId` |
+| A cluster of entities with cross-field rules | `createAggregate` |
+
+## Next
+
+Start the Essentials track to learn each concept in depth — with examples,
+anti-patterns, and hands-on exercises.
+
+→ [Essentials: Creating Entities](/docs/guides/creating-entities/)

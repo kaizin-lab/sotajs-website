@@ -4,26 +4,25 @@ description: "Structural equality — when identity doesn't matter, only value d
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-A Value Object is defined by its attributes, not by an identity.
-Two value objects with the same fields are equal — there's no `id` to tell them apart.
+> **What you'll learn**
+> - What a Value Object is and how it differs from an Entity
+> - How structural equality works
+> - When to use Value Object vs Entity
+> - Common mistakes: type aliases, unnecessary IDs, treating everything as Entity
 
 ## Concept
 
+A Value Object is defined by its attributes, not by an identity.
+Two value objects with the same fields are equal:
+
 ```ts
-// These are the same money amount:
 const a = Money.create({ amount: 100, currency: 'USD' });
 const b = Money.create({ amount: 100, currency: 'USD' });
 a.equals(b); // true — same value
 
-// These are different:
 const c = Money.create({ amount: 100, currency: 'EUR' });
 a.equals(c); // false — different currency
-
-// No id field. Comparison is structural.
 ```
-
-Compare to Entity: two User objects with the same id are equal even if props differ.
-Value Object: two Money objects with the same amount and currency are equal — there's no identity.
 
 ## Creating a Value Object
 
@@ -36,64 +35,42 @@ const MoneySchema = z.object({
   currency: z.enum(['USD', 'EUR', 'RUB']),
 });
 
-const Money = createValueObject({
-  schema: MoneySchema,
-});
+const Money = createValueObject({ schema: MoneySchema });
 type Money = ReturnType<typeof Money.create>;
 ```
-
-Value Objects don't have actions or computed. They're immutable snapshots with structural equality.
-
-❌ **Using a plain object or type alias as a Value Object:**
-
-```ts
-type Money = { amount: number; currency: string };
-
-function charge(amount: Money) {
-  // Is amount validated? Is currency one of the allowed values?
-  // No — it's just a type alias. Zero runtime guarantees.
-}
-```
-
-> `type Money = { ... }` is a TypeScript fiction. At runtime it's just an object.
-> Any `{ amount: -500, currency: 'BTC' }` passes. `createValueObject` with Zod
-> catches invalid values at creation time.
-
-❌ **Giving a Value Object an `id`:**
-
-```ts
-const MoneySchema = z.object({
-  id: z.string(),       // ❌ value objects don't have identity
-  amount: z.number(),
-  currency: z.string(),
-});
-```
-
-> If two Money objects with the same amount and currency are not equal because
-> they have different ids — you made an Entity by accident. Value objects compare
-> by all fields.
-
-## Immutability
 
 Value Objects are immutable. To "change" one, create a new instance:
 
 ```ts
 const price = Money.create({ amount: 100, currency: 'USD' });
-
-// There is no price.setAmount(200).
-// Create a new one:
 const discounted = Money.create({ amount: 80, currency: 'USD' });
 ```
 
-❌ **Trying to mutate a Value Object:**
+❌ **Using a type alias as a Value Object:**
 
 ```ts
-// No auto-setters on Value Objects. This doesn't exist:
-price.actions.setAmount(80); // ❌ not available
+type Money = { amount: number; currency: string };
+
+function charge(amount: Money) {
+  // Is currency one of the allowed values? No — it's just a type alias.
+  // { amount: -500, currency: 'BTC' } passes.
+}
 ```
 
-> Value Objects represent concepts that don't change — like money amounts,
-> addresses, coordinates. If the concept has mutable state, it should be an Entity.
+> `type Money = { ... }` is a TypeScript fiction. At runtime it's just an object.
+> `createValueObject` with Zod catches invalid values at creation time.
+
+❌ **Giving a Value Object an `id`:**
+
+```ts
+const MoneySchema = z.object({
+  id: z.string(),  // ❌ value objects don't have identity
+  amount: z.number(),
+});
+```
+
+> Two Money objects with the same amount but different ids are not equal —
+> you made an Entity by accident.
 
 ## When to use Value Object vs Entity
 
@@ -101,14 +78,12 @@ price.actions.setAmount(80); // ❌ not available
 |---|---|---|
 | Has identity (`id`) | No | Yes |
 | Equality | Structural (all fields) | By identity (`id`) |
-| Mutable | No (immutable) | Yes (via actions) |
-| Zod schema | `createValueObject` | `createEntity` |
-| Example | Money, Address, Email, Coordinate | User, Order, Product, Tenant |
+| Mutable | No | Yes (via actions) |
+| Example | Money, Address, Email | User, Order, Product |
 
 ❌ **Making everything an Entity:**
 
 ```ts
-// Address as Entity for no reason:
 const Address = createEntity({
   schema: z.object({ id: z.string().uuid(), street: z.string(), city: z.string() }),
   actions: {},
@@ -116,15 +91,13 @@ const Address = createEntity({
 
 const a = Address.create({ id: 'abc', street: '123 Main', city: 'NYC' });
 const b = Address.create({ id: 'xyz', street: '123 Main', city: 'NYC' });
-a.equals(b); // false — different ids, even though it's the same address
+a.equals(b); // false — different ids, same address
 ```
 
-> Two identical addresses should be equal. Adding an `id` breaks that.
+> Two identical addresses should be equal. An `id` breaks that.
 > Use `createValueObject` when the concept has no identity of its own.
 
 ## Value Objects as entity fields
-
-Value Objects can be nested in Entity schemas:
 
 ```ts
 const UserSchema = z.object({
@@ -132,15 +105,29 @@ const UserSchema = z.object({
   username: z.string(),
   address: MoneySchema, // ← Value Object schema as a field
 });
-
-const user = User.create({
-  id: '...', username: 'alice',
-  address: { amount: 100, currency: 'USD' },
-});
-user.props.address; // { amount: 100, currency: 'USD' }
 ```
 
-## Next
+---
 
-- [Branded IDs](/docs/guides/branded-ids/) — compile-time safety for entity identifiers
-- [Creating Entities](/docs/guides/creating-entities/) — the full Entity lifecycle
+## What you've learned
+
+**Value Objects compare by structure, not identity.** Two instances with the same
+fields are equal. There is no `id` — the value IS the identity.
+
+**Value Objects are immutable.** No actions, no auto-setters. To "change" one,
+create a new instance. This models concepts that don't change independently:
+money amounts, addresses, coordinates.
+
+**Don't use type aliases.** `type Money = { ... }` has zero runtime validation.
+`createValueObject` with Zod catches invalid values at creation.
+
+**Don't give Value Objects an `id`.** If two identical values aren't equal because
+their ids differ, you made an Entity. Value Objects have no identity.
+
+## What's next?
+
+Branded IDs prevent mixing up `UserId` and `OrderId` at compile time. They're
+strings at runtime, distinct types to TypeScript. **Branded IDs** covers how
+to create them, why they matter, and where to use them.
+
+→ [Branded IDs](/docs/guides/branded-ids/)

@@ -4,8 +4,11 @@ description: "How to read entity props and when auto-setters are all you need"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-Entity state is read through `props` and mutated through auto-setters.
-No getters, no manual setters — the library handles both.
+> **What you'll learn**
+> - How to read entity state through `props`
+> - What auto-setters are generated and why they're typed
+> - When auto-setters are enough — and when you need an action
+> - How entity identity comparison works
 
 ## Reading state
 
@@ -129,7 +132,28 @@ if (userA === userB) { ... } // compares object identity, not entity identity
 
 > Use `.equals()` for entity comparison. `===` checks if it's literally the same object.
 
-## Next
+---
 
-- [Actions](/docs/guides/actions/) — when a mutation needs business logic
-- [Computed Properties](/docs/guides/computed-properties/) — derived values from state
+## What you've learned
+
+**`props` is a frozen snapshot.** Read any field, but never mutate it directly.
+Always read `user.props.field` after mutations — destructuring captures a stale value.
+
+**Auto-setters handle simple field assignment.** Every Zod field gets a typed `setField()`
+that TypeScript enforces. If your action body is a single assignment, delete it —
+the auto-setter already does the job.
+
+**Auto-setters are pure.** No validation, no guards, no events. When you need
+any of those, you need an [Action](/docs/guides/actions/).
+
+**Entities compare by identity.** `userA.equals(userB)` checks the `id` field.
+`===` checks object reference — two entities with the same id are equal even if
+they're different objects.
+
+## What's next?
+
+Auto-setters cover simple field assignment. But domain logic needs more — guard clauses,
+multi-field changes, state machine transitions. **Actions** covers when and how to
+write actions that carry business meaning.
+
+→ [Actions](/docs/guides/actions/)

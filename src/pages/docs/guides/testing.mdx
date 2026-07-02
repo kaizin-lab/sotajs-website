@@ -4,8 +4,11 @@ description: "Unit-test domain logic without mocks — fast, deterministic, mean
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-Domain logic is the easiest code in your system to test. No database, no HTTP,
-no file system. Create an entity, call an action, assert the result.
+> **What you'll learn**
+> - The basic test pattern: create entity, call action, assert
+> - How to test guard clauses and error paths
+> - How to test invariants, events, computed properties
+> - What NOT to test — the library's internals
 
 ## The basic pattern
 
@@ -37,11 +40,10 @@ it('verifies email', async () => {
 });
 ```
 
-> This tests Express, database connection, and serialization — not just the domain
-> rule. It's slow, flaky, and tells you nothing about whether `verifyEmail()` works.
+> This tests Express, database, and serialization — not the domain rule.
 > Domain logic should be testable in under 10ms without infrastructure.
 
-## Testing actions with guard clauses
+## Testing guard clauses
 
 ```ts
 it('rejects email verification if already verified', () => {
@@ -62,12 +64,7 @@ it('cannot deactivate unverified user', () => {
 
 ```ts
 it('deactivates user', () => {
-  const user = User.create({ id: '...', username: 'alice' });
-  user.actions.verifyEmail();
-  user.actions.deactivate();
-  expect(user.props.status).toBe('inactive');
-  // What happens if you call deactivate() without verifying?
-  // What happens if you call verifyEmail() twice?
+  // Only tests happy path. What about double-verify? Deactivate without verify?
   // Untested → unknown → bug in production
 });
 ```
@@ -84,40 +81,27 @@ it('rejects order with no items', () => {
   ).toThrow('Order must have at least one item');
 });
 
-it('rejects confirmation of unpaid order', () => {
-  const order = Order.create({
-    id: '...', status: 'pending', amountPaid: 0,
-    items: [{ productId: '...', quantity: 1, price: 100 }],
-  });
-
-  expect(() => order.actions.confirm()).toThrow('Cannot confirm unpaid order');
-});
-
-it('invariants re-check after every action', () => {
+it('invariants re-check after actions', () => {
   const order = Order.create({
     id: '...', status: 'pending', amountPaid: 100,
     items: [{ productId: '...', quantity: 1, price: 100 }],
   });
 
-  order.actions.setAmountPaid(0); // auto-setter — no action, no invariant check
+  order.actions.setAmountPaid(0); // auto-setter — no invariant check here
 
-  // Next action will catch the broken invariant:
+  // Next ACTION catches the broken invariant:
   expect(() => order.actions.confirm()).toThrow('Cannot confirm unpaid order');
 });
 ```
 
-> The last test is subtle: auto-setters don't trigger invariant checks.
-> Invariants run on `.create()` and after every action — not after auto-setters.
-> Set `amountPaid` to 0, then call `confirm()`, and invariants catch it.
+> Auto-setters don't trigger invariants. Invariants run after actions.
+> The test above exploits this: set amount to 0, then call `confirm()`, invariants catch it.
 
 ## Testing domain events
 
 ```ts
 it('emits event on ship', () => {
-  const order = Order.create({
-    id: 'b3f1...', status: 'confirmed', amountPaid: 100,
-    items: [{ productId: '...', quantity: 1, price: 100 }],
-  });
+  const order = Order.create({ /* ... */ });
 
   order.actions.ship();
   const events = order.getPendingEvents();
@@ -128,37 +112,17 @@ it('emits event on ship', () => {
 });
 ```
 
-❌ **Testing events by checking internal queue format:**
-
-```ts
-expect(order._events).toEqual([{ ... }]); // ❌ tests implementation, not behavior
-```
-
-> Test the public API: `getPendingEvents()`. Private fields can change.
-> Behavior is stable; implementation isn't.
+Test the public API: `getPendingEvents()`. Don't inspect private fields.
 
 ## Testing computed properties
 
 ```ts
-it('derives initials from username', () => {
-  const user = User.create({ id: '...', username: 'alice' });
-  expect(user.initials).toBe('AL');
-});
-
 it('initials update after username change', () => {
   const user = User.create({ id: '...', username: 'alice' });
   user.actions.setUsername('bob');
   expect(user.initials).toBe('BO');
 });
 ```
-
-❌ **Testing computed by inspecting internal state:**
-
-```ts
-expect(user._computed.initials()).toBe('AL'); // ❌ private API
-```
-
-> Access computed as properties: `user.initials`. That's the public API.
 
 ## Testing Value Objects
 
@@ -167,12 +131,6 @@ it('structural equality', () => {
   const a = Money.create({ amount: 100, currency: 'USD' });
   const b = Money.create({ amount: 100, currency: 'USD' });
   expect(a.equals(b)).toBe(true);
-});
-
-it('different currency — not equal', () => {
-  const a = Money.create({ amount: 100, currency: 'USD' });
-  const b = Money.create({ amount: 100, currency: 'EUR' });
-  expect(a.equals(b)).toBe(false);
 });
 
 it('rejects negative amounts', () => {
@@ -190,40 +148,41 @@ it('rejects invalid UUID', () => {
 it('UserId and OrderId are different types', () => {
   const userId = UserId.create('b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3');
   const orderId = OrderId.create('d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8');
-
-  // Runtime: both are strings
   expect(typeof userId).toBe('string');
   expect(typeof orderId).toBe('string');
-
-  // Compile-time: different types
-  // const x: UserId = orderId; // would be a TypeScript error
+  // TypeScript: const x: UserId = orderId; // ← would error
 });
 ```
 
 ## What NOT to test
 
-❌ **Testing the library's internals:**
+❌ **The library's internals** — `createEntity` returns `props`, `actions`, `computed` is the library's contract, tested in `@sotajs/ddd`'s own suite.
 
-```ts
-// Don't test that createEntity returns an object with props, actions, computed.
-// That's the library's job, tested in @sotajs/ddd's own test suite.
-```
+❌ **Zod** — `z.string().email()` rejecting `'notanemail'` is Zod's job.
 
-❌ **Testing Zod:**
+✅ **Test YOUR domain rules** — your guard clauses, your invariants, your computed values, your events.
 
-```ts
-// Don't test that z.string().email() rejects 'notanemail'.
-// That's Zod's test suite. Your test: does YOUR schema reject what it should.
-```
+---
 
-✅ **Test YOUR domain rules:**
+## What you've learned
 
-- Your actions' guard clauses
-- Your invariants
-- Your computed values
-- Your events
+**Domain logic is the easiest code to test.** Create an entity, call an action,
+assert the result. No database, no HTTP, no mocks. Tests run in milliseconds.
 
-## Next
+**Test error paths, not just happy paths.** Guard clauses are where domain rules live.
+Every `throw` should have a corresponding test.
 
-- [ORM Integration](/docs/orm-integration/) — test repositories with real databases
-- [Creating Entities](/docs/guides/creating-entities/) — back to the entity lifecycle
+**Auto-setters don't trigger invariants.** Use this in tests: set a field to an
+invalid value via auto-setter, then call an action — invariants should catch it.
+
+**Test the public API.** `.props`, `.actions`, `.equals()`, `.getPendingEvents()`.
+Private fields can change. Behavior is stable.
+
+## What's next?
+
+You've completed the Essentials track. For deeper understanding of how the library
+works internally, see **How It Works**. For rules on writing idiomatic code,
+see the **Style Guide**.
+
+→ [How It Works](/docs/how-it-works/) (coming soon)
+→ [Style Guide](/docs/style-guide/) (coming soon)

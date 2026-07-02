@@ -4,10 +4,13 @@ description: "Transactional consistency boundary — invariants, nested entities
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-An Aggregate is a cluster of entities treated as a unit for data changes.
-Its job: ensure invariants hold after every mutation, no matter what.
+> **What you'll learn**
+> - How to compose entities into an aggregate
+> - Why `invariants` is required and what it guarantees
+> - How nested entities are auto-hydrated
+> - The pull-based domain event pattern
 
-## 1. Start with the entities inside
+## 1. Define the entities inside
 
 ```ts
 const OrderItemSchema = z.object({
@@ -17,40 +20,22 @@ const OrderItemSchema = z.object({
 });
 const OrderItem = createEntity({ schema: OrderItemSchema, actions: {} });
 type OrderItem = ReturnType<typeof OrderItem.create>;
-
-const CustomerInfoSchema = z.object({
-  name: z.string(),
-  email: z.string().email(),
-});
-const CustomerInfo = createEntity({ schema: CustomerInfoSchema, actions: {} });
 ```
 
-❌ **Skipping entity creation for nested objects:**
+❌ **Plain objects instead of entities:**
 
 ```ts
-const OrderSchema = z.object({
-  id: z.string().uuid(),
-  items: z.array(z.object({ productId: z.string(), quantity: z.number(), price: z.number() })),
-  // Plain object — no identity, no behavior, no auto-setters
-});
+items: z.array(z.object({ productId: z.string(), quantity: z.number() }))
+// Plain object — no identity, no behavior, no auto-setters
 ```
 
-> Plain objects inside an aggregate are just data. Entities give you `.equals()`,
-> auto-setters, typed actions — even for nested items. Use `createEntity` for
-> any object with its own identity.
+> Entities give you `.equals()`, auto-setters, typed actions — even for nested items.
+> Use `createEntity` for any nested object with its own identity.
 
 ## 2. Wire into createAggregate
 
 ```ts
 import { createAggregate } from '@sotajs/ddd';
-
-const OrderSchema = z.object({
-  id: z.string().uuid(),
-  status: z.enum(['pending', 'confirmed', 'shipped']),
-  amountPaid: z.number(),
-  items: z.array(OrderItemSchema),
-  customerInfo: CustomerInfoSchema,
-});
 
 const Order = createAggregate({
   name: 'Order',
@@ -87,25 +72,21 @@ type Order = ReturnType<typeof Order.create>;
 ## 3. Invariants — required, run on every mutation
 
 `invariants` is required. TypeScript won't compile without it.
-All invariants run after every action — they don't guess which ones are "relevant":
+All invariants run after every action:
 
 ```ts
-order.actions.confirm(); // runs all invariants, including "must have at least one item"
+order.actions.confirm(); // runs ALL invariants — not just "relevant" ones
 ```
 
 ❌ **Empty invariants array:**
 
 ```ts
-invariants: [],
+invariants: [], // compiles, zero protection
 ```
 
-> This compiles but gives zero protection. If you don't have cross-field consistency
-> rules, use `createEntity` instead of `createAggregate`. An aggregate without
-> invariants is an entity with extra ceremony.
+> No invariants → use `createEntity`. Aggregate exists for the invariants guarantee.
 
 ## 4. Nested entities — auto-hydrated
-
-Entities declared in `entities` are auto-hydrated at creation:
 
 ```ts
 const order = Order.create({
@@ -119,111 +100,68 @@ const order = Order.create({
 
 // items are real entity instances:
 order.state.items[0].props.quantity; // 2
-order.state.items[0].equals(order.state.items[1]); // false — different entities
+order.state.items[0].equals(order.state.items[1]); // false
 
 // customerInfo is a real entity:
 order.state.customerInfo.actions.setName('Alicia');
 ```
 
-> On `.props` read, entities are dehydrated back to plain objects — ready for `JSON.stringify()`.
-> Use `.state` when you need hydrated entity instances.
-
-❌ **Mutating nested entities directly without actions:**
-
-```ts
-order.state.items[0].props.quantity = 5; // TypeError — props is frozen
-```
-
-> Use the entity's own actions or auto-setters: `order.state.items[0].actions.setQuantity(5)`.
+> On `.props` read, entities are dehydrated back to plain objects — ready for serialization.
+> Use `.state` for hydrated entity instances.
 
 ## 5. Domain events — pull, don't push
 
-Actions return `{ event }`. Events accumulate in a queue. You decide when to dispatch:
+Actions return `{ event }`. Events accumulate. You dispatch:
 
 ```ts
 order.actions.ship();
 const events = order.getPendingEvents();
-// [{ aggregateId: '...', timestamp: ... }]
-
-// Now dispatch — your event bus, your rules
 await eventBus.publish(events);
 ```
 
-❌ **Ignoring events:**
+❌ **Ignoring events or auto-dispatching:**
 
 ```ts
-actions: {
-  ship(state) {
-    state.status = 'shipped';
-    // No event returned — consumers don't know this happened
-  },
-}
-```
-
-> If downstream systems need to know about the mutation, return an event.
-> Pull-based means no hidden side effects — if you don't pull, nothing fires.
-
-❌ **Auto-dispatching inside the action:**
-
-```ts
-actions: {
-  ship(state) {
-    state.status = 'shipped';
-    eventBus.publish({ ... }); // ❌ side effect inside the domain layer
-  },
-}
+// ❌ no event returned — downstream systems don't know
+// ❌ eventBus.publish() inside action — side effect in domain layer
 ```
 
 > The domain layer produces events. The application layer dispatches them.
-> Keeping them separate makes the aggregate testable without mocking an event bus.
+> Pull-based means no hidden side effects.
 
-## 6. Aggregate vs Entity — the real difference
+## Entity vs Aggregate
 
 | | Entity | Aggregate |
 |---|---|---|
 | `invariants` | ❌ | ✅ Required |
 | Cross-field rules on every mutation | ❌ | ✅ |
-| Nested entities | Plain objects | Auto-hydrated instances |
+| Nested entities | Plain objects | Auto-hydrated |
 | Domain events | ❌ | ✅ Pull-based queue |
 | Auto-setters | ✅ | ❌ |
-| Use when | Identity + behavior, no cross-field rules | Invariants must hold after every mutation |
 
-❌ **Using Aggregate when Entity is enough:**
+---
 
-```ts
-// User has no cross-field invariants — Entity is the right tool
-const User = createAggregate({
-  name: 'User',
-  schema: UserSchema,
-  invariants: [], // empty — no cross-field rules
-  actions: { verifyEmail(state) { ... } },
-});
-```
+## What you've learned
 
-> `createAggregate` exists for one reason: the `invariants` guarantee. Without
-> invariants, `createEntity` is simpler and gives you auto-setters.
+**Aggregate is the transactional consistency boundary.** `invariants` run on `.create()`
+and after every action — all invariants, every time. This is the guarantee that
+makes Aggregate different from Entity.
 
-❌ **Using Entity when you need invariants:**
+**Nested entities are auto-hydrated.** Declare them in `entities` and they become
+real entity instances — with `.equals()`, auto-setters, and typed actions.
+On `.props` read they dehydrate back to plain objects.
 
-```ts
-// Order has cross-field rules — Aggregate is the right tool
-const Order = createEntity({
-  schema: OrderSchema,
-  actions: {
-    confirm(state) {
-      // Forgot to check amountPaid? Bug.
-      state.status = 'confirmed';
-    },
-  },
-});
-```
+**Domain events are pull-based.** Return `{ event }` from actions. Events accumulate
+in a queue. You decide when to dispatch — no hidden side effects.
 
-> Entity can't enforce "order total must match item sum" after every action.
-> You'd need to duplicate the check in every action. Aggregate runs invariants
-> automatically — one definition, enforced everywhere.
+**Use Aggregate when you have cross-field invariants.** Without invariants,
+`createEntity` is simpler and gives you auto-setters. Aggregate's sole reason
+to exist is the invariants guarantee.
 
-## Next
+## What's next?
 
-- [Invariants](/docs/guides/invariants/) — rules that span multiple fields
-- [Testing](/docs/guides/testing/) — unit-test your domain logic
-- [ORM Integration](/docs/orm-integration/) — persist aggregates
+Domain logic is the easiest code to test — no database, no HTTP, no mocks.
+**Testing** covers unit-testing entities, aggregates, invariants, and events
+with plain Vitest assertions.
+
+→ [Testing](/docs/guides/testing/)

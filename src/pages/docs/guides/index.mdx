@@ -1,39 +1,37 @@
 ---
-title: "Guides"
-description: "How to use @sotajs/ddd — from first entity to production patterns"
+title: "Essentials"
+description: "Learn @sotajs/ddd step by step — from first entity to production patterns"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-Practical guides for using `@sotajs/ddd`. Each guide is self-contained — read in order
-or jump to what you need. Anti-patterns are embedded in every guide: ❌ shows the mistake,
-✅ shows the fix.
+A guided track through `@sotajs/ddd`. Each part builds on the previous one.
+Read in order if you're new to the library — or jump to what you need.
 
 ## Core workflow
 
-- [Creating Entities](/docs/guides/creating-entities/) — from Zod schema to rich domain entity
-- [Reading and Mutating State](/docs/guides/reading-mutating-state/) — props, auto-setters, identity
-- [Actions](/docs/guides/actions/) — business logic with validation and guard clauses
-- [Computed Properties](/docs/guides/computed-properties/) — derived values from entity state
+1. [Creating Entities](/docs/guides/creating-entities/) — Zod schema → rich domain entity
+2. [Reading and Mutating State](/docs/guides/reading-mutating-state/) — props, auto-setters, identity
+3. [Actions](/docs/guides/actions/) — business logic with validation and guard clauses
+4. [Computed Properties](/docs/guides/computed-properties/) — derived values from entity state
 
 ## Domain integrity
 
-- [Invariants](/docs/guides/invariants/) — cross-field consistency rules and where they live
-- [Value Objects](/docs/guides/value-objects/) — structural equality for values without identity
-- [Branded IDs](/docs/guides/branded-ids/) — compile-time safety for entity identifiers
+5. [Invariants](/docs/guides/invariants/) — cross-field consistency rules
+6. [Value Objects](/docs/guides/value-objects/) — structural equality for values without identity
+7. [Branded IDs](/docs/guides/branded-ids/) — compile-time safety for entity identifiers
 
 ## End-to-end
 
-- [Building Aggregates](/docs/guides/aggregates/) — transactional boundaries, nested entities, events
-- [Testing](/docs/guides/testing/) — unit-test domain logic without mocks
+8. [Building Aggregates](/docs/guides/aggregates/) — transactional boundaries, nested entities, events
+9. [Testing](/docs/guides/testing/) — unit-test domain logic without mocks
 
-## Integration
+---
 
-- [ORM Integration](/docs/orm-integration/) — repository patterns for Prisma, Drizzle, Knex
-- [What we don't cover](/docs/what-we-dont-cover/) — honest boundaries of the library
+## Other sections
 
-## Reference
-
-- [Entity API](/docs/api/entity/)
-- [Aggregate API](/docs/api/aggregate/)
-- [Value Object API](/docs/api/value-object/)
-- [BrandedId API](/docs/api/branded-id/)
+- [Core Concepts](/docs/core-concepts/) — all four building blocks side by side (coming soon)
+- [How It Works](/docs/how-it-works/) — internals: freeze, auto-setters, invariants mechanism
+- [Style Guide](/docs/style-guide/) — rules with priorities: Essential / Recommended / Suggested
+- [API Reference](/docs/api/entity/) — full config reference for every function
+- [ORM Integration](/docs/orm-integration/) — Prisma, Drizzle, Knex
+- [FAQ](/docs/faq/) — answers structured by topic

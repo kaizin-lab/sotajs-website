@@ -4,6 +4,12 @@ description: "From Zod schema to rich domain entity — the complete lifecycle"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
+> **What you'll learn**
+> - How a Zod schema becomes an Entity in one step
+> - What auto-setters are and when they're enough
+> - When to write an action vs let auto-setters do the work
+> - How computed properties derive values from state
+
 An Entity has identity, mutable state changed only through defined actions,
 and computed properties. This guide walks through every decision from schema to usage.
 
@@ -200,8 +206,30 @@ user.equals(User.create({ id: 'b3f1ae2c-abcd', username: 'bob' }));
 // true — same id, different props
 ```
 
-## Next
+---
 
-- [Reading and Mutating State](/docs/guides/reading-mutating-state/) — auto-setters in depth
-- [Actions](/docs/guides/actions/) — when actions earn their place
-- [Computed Properties](/docs/guides/computed-properties/) — derived values done right
+## What you've learned
+
+**Your Zod schema is your entity's type system.** No duplication — the same schema
+validates API input and defines your domain model. Pass it to `createEntity` and
+you get identity, frozen props, and structural equality for free.
+
+**Auto-setters handle simple field mutation.** Every Zod field (except `id`) gets
+a typed `setField()` automatically. Don't wrap them in custom actions — if an
+action body is a single assignment, delete it.
+
+**Actions carry business meaning.** Write an action when the mutation needs a guard
+clause, changes multiple fields atomically, or represents a state machine transition.
+The entity should protect its own invariants — callers shouldn't need to know
+preconditions.
+
+**Computed properties derive values from state.** Accessed as properties (not function
+calls), recalculated on every access. Keep them synchronous, pure, and fast — no I/O.
+
+## What's next?
+
+You can now create an Entity from a Zod schema. But how do you read its state and
+mutate fields in practice? **Reading and Mutating State** covers `props`, auto-setters
+in depth, identity comparison, and when auto-setters are all the mutation you need.
+
+→ [Reading and Mutating State](/docs/guides/reading-mutating-state/)

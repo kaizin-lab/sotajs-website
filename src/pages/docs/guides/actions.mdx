@@ -4,9 +4,11 @@ description: "Business logic with validation — when mutations carry domain mea
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-An action is a method on your entity that mutates state **with intent**.
-It's not `setField(value)` — that's an auto-setter. An action earns its place
-through validation, conditional logic, or multi-field changes.
+> **What you'll learn**
+> - How actions differ from auto-setters
+> - When to use guard clauses inside actions
+> - How to make multi-field changes atomic
+> - Why actions should protect their own preconditions
 
 ## Anatomy of an action
 
@@ -150,8 +152,28 @@ Does the mutation have business meaning beyond "change this value"?
        └── Validation beyond Zod schema? → action
 ```
 
-## Next
+---
 
-- [Invariants](/docs/guides/invariants/) — cross-field consistency rules
-- [Computed Properties](/docs/guides/computed-properties/) — derived values from state
-- [Building Aggregates](/docs/guides/aggregates/) — where actions meet invariants
+## What you've learned
+
+**Actions carry business meaning.** Auto-setters handle raw field assignment.
+Actions earn their place through guard clauses, multi-field atomicity, or
+state machine transitions.
+
+**Guard clauses belong inside actions.** Don't validate preconditions in the
+controller — every caller must then duplicate the check. Put the guard in the
+action and the entity enforces its own rules.
+
+**Domain events are pull-based.** Return `{ event }` from actions in an Aggregate.
+Events accumulate in a queue. You decide when to dispatch — no hidden side effects.
+
+**Use the decision tree.** Single assignment → auto-setter. Guard clause, multi-field
+change, state transition, or event → action.
+
+## What's next?
+
+Computed properties derive values from entity state without mutation. They're
+properties, not function calls — recalculated on every access. **Computed Properties**
+covers what they are, what they're for, and what they must never do.
+
+→ [Computed Properties](/docs/guides/computed-properties/)

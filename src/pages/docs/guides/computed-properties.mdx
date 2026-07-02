@@ -4,8 +4,11 @@ description: "Derived values from entity state — what they are and what they a
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-Computed properties derive values from entity props. They're accessed as properties
-(no function call) and recalculated on every access from the current state.
+> **What you'll learn**
+> - How to define computed properties alongside schema and actions
+> - What computed is for — and what it must never do
+> - How computed differs from actions
+> - The boundary between computed and use-case logic
 
 ## Defining computed
 
@@ -27,20 +30,6 @@ user.initials;     // 'AL'
 
 They look like getters, work like getters, but are defined alongside your schema and actions.
 
-## Why not class getters?
-
-You could write:
-
-```ts
-class User {
-  get displayName() { return this.username; }
-}
-```
-
-But computed properties live in the entity config — next to the schema that defines
-the fields they read from. No splitting logic between `createEntity()` call and
-a separate class body.
-
 ## What computed is FOR
 
 - Formatting: `initials`, `fullName`, `abbreviatedAddress`
@@ -48,7 +37,7 @@ a separate class body.
 - Aggregations: `totalPrice = items.reduce(...)`, `wordCount`
 - Lookups: `primaryEmail = emails[0]`
 
-Keep them synchronous, pure, and fast.
+Keep them synchronous, pure, and fast. No I/O, no async, no mutation.
 
 ## What computed is NOT for
 
@@ -57,7 +46,7 @@ Keep them synchronous, pure, and fast.
 ```ts
 computed: {
   avatarUrl(props) {
-    return s3.getSignedUrl(props.avatarKey); // ❌ runs on every property access
+    return s3.getSignedUrl(props.avatarKey); // ❌ runs on every access
   },
 }
 ```
@@ -70,13 +59,12 @@ computed: {
 ```ts
 computed: {
   recommendationScore(props) {
-    return mlModel.predict(props.history); // ❌ CPU-heavy, runs on every access
+    return mlModel.predict(props.history); // ❌ CPU-heavy, runs every access
   },
 }
 ```
 
-> If the value is expensive to compute, calculate it once in the use case
-> and attach it as a separate return value or a dedicated field.
+> If the value is expensive, compute it once in the use case.
 
 ❌ **Mutating state from computed:**
 
@@ -89,38 +77,32 @@ computed: {
 }
 ```
 
-> Computed receives a read-only snapshot. Mutating it has undefined behavior.
-> Use an action if you need to change state.
+> Computed receives a read-only snapshot. Use an action for mutations.
 
-❌ **Async computed:**
+❌ **Async computed — not supported:**
 
 ```ts
 computed: {
-  async recommendations(props) { ... } // ❌ not supported
+  async recommendations(props) { ... }
 }
 ```
 
-> Computed is synchronous. If you need async derivation, compute it before
-> creating the entity or run it in the use case.
-
-## Computed vs. action — the line
+## Computed vs. action
 
 | Computed | Action |
 |---|---|
 | Reads state, returns value | Reads state, mutates state |
 | No side effects | Changes entity state |
 | Property access (`user.isVerified`) | Method call (`user.actions.verifyEmail()`) |
-| Can't reject or throw (design intent) | Can throw to reject mutation |
+| Can't reject or throw | Can throw to reject mutation |
 
 ❌ **Using an action when computed would do:**
 
 ```ts
 actions: {
-  getDisplayName(state) { return state.username; }, // ❌ this is computed territory
+  getDisplayName(state) { return state.username; }, // computed territory
 }
 ```
-
-> If it reads state and returns a value without mutating — make it a computed property.
 
 ❌ **Using computed to enforce validation:**
 
@@ -136,7 +118,25 @@ computed: {
 > Don't use computed for validation. Invariants (on Aggregate) or guard clauses
 > (in actions) actively reject invalid states. Computed is passive.
 
-## Next
+---
 
-- [Invariants](/docs/guides/invariants/) — active validation that rejects invalid states
-- [Actions](/docs/guides/actions/) — mutations with business meaning
+## What you've learned
+
+**Computed properties derive values from state.** Defined alongside schema and actions
+in the entity config. Accessed as properties — no function call syntax.
+
+**Computed is synchronous and pure.** No I/O, no async, no mutation. If you need
+a database call or heavy computation, do it in the use case and attach the result
+separately.
+
+**Computed ≠ validation.** Computed reports state. Actions and invariants enforce
+it. Don't use `isValid()` to silently track broken state — throw in the action
+that would cause the invalid state.
+
+## What's next?
+
+Computed properties derive values. Invariants enforce them. **Invariants** covers
+cross-field consistency rules — where they live, when they run, and why they're
+the backbone of domain integrity.
+
+→ [Invariants](/docs/guides/invariants/)
