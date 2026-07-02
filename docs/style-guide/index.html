@@ -1,0 +1,298 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Concepts</div> <a href="/docs/core-concepts/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Core Concepts</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Essentials</div> <a href="/docs/guides/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Index</a> <a href="/docs/guides/creating-entities/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Creating Entities</a> <a href="/docs/guides/reading-mutating-state/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Reading & Mutating State</a> <a href="/docs/guides/actions/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Actions</a> <a href="/docs/guides/computed-properties/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Computed Properties</a> <a href="/docs/guides/invariants/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Invariants</a> <a href="/docs/guides/value-objects/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Objects</a> <a href="/docs/guides/branded-ids/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Branded IDs</a> <a href="/docs/guides/aggregates/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregates</a> <a href="/docs/guides/testing/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Testing</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Internals</div> <a href="/docs/how-it-works/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">How It Works</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">Reference</div> <a href="/docs/style-guide/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Style Guide</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <blockquote>
+<p><strong>What you’ll learn</strong></p>
+<ul>
+<li>Rules that prevent bugs (Essential)</li>
+<li>Rules that improve readability (Recommended)</li>
+<li>Conventions for consistency (Suggested)</li>
+</ul>
+</blockquote>
+<p>This is the official style guide for <code>@sotajs/ddd</code>. It lists our recommended patterns
+and best practices. You’re encouraged to follow them — but take time to evaluate
+your own situation. No style guide fits all projects.</p>
+<h2 id="rule-categories">Rule Categories</h2>
+<h3 id="priority-a-essential">Priority A: Essential</h3>
+<p><strong>These rules prevent errors.</strong> Learn them and follow them at all costs.
+Exceptions should be extremely rare and made only with deep understanding
+of both TypeScript and DDD.</p>
+<h3 id="priority-b-recommended">Priority B: Recommended</h3>
+<p><strong>These rules improve readability and developer experience.</strong> Your code will
+still run if you violate them, but violations should be rare and well-justified.</p>
+<h3 id="priority-c-suggested">Priority C: Suggested</h3>
+<p><strong>Where multiple equally good options exist, we suggest a default.</strong> Feel free
+to make a different choice — as long as you’re consistent and have a good reason.</p>
+<hr/>
+<h2 id="priority-a-rules-essential">Priority A Rules: Essential</h2>
+<h3 id="do-not-put-an-id-in-value-objects">Do Not Put an id in Value Objects</h3>
+<p><strong>ESSENTIAL</strong></p>
+<p>Value Objects are defined by their attributes, not by identity. Adding an <code>id</code>
+breaks structural equality:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MoneySchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),    </span><span style="color:#6A737D">// ❌ value objects don&#39;t have identity</span></span>
+<span class="line"><span style="color:#E1E4E8">  amount: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  currency: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;xyz&#39;</span><span style="color:#E1E4E8">, amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b); </span><span style="color:#6A737D">// false — different ids, same value</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MoneySchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  amount: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  currency: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#6A737D">// No id field — equality is structural</span></span></code></pre>
+<blockquote>
+<p>If the concept has identity and changes over time, it’s an Entity. Use <code>createEntity</code>.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-validate-domain-rules-outside-the-entity">Do Not Validate Domain Rules Outside the Entity</h3>
+<p><strong>ESSENTIAL</strong></p>
+<p>Domain rules belong inside actions, not in controllers or services. When you
+validate outside, every caller must duplicate the check:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Controller:</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">user.props.emailVerified) {</span></span>
+<span class="line"><span style="color:#F97583">  throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> BadRequestException</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Verify email first&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">deactivate</span><span style="color:#E1E4E8">();</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Inside the entity:</span></span>
+<span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  deactivate</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Must verify email first&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;inactive&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Controller — just call the action:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">deactivate</span><span style="color:#E1E4E8">();</span></span></code></pre>
+<blockquote>
+<p>The entity should protect its own invariants. Callers shouldn’t need to know
+preconditions. If the action isn’t safe to call in the current state, it should throw.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-use--for-entity-comparison">Do Not Use === for Entity Comparison</h3>
+<p><strong>ESSENTIAL</strong></p>
+<p>Entities compare by identity (<code>id</code>), not by object reference:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;abc&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (a </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> b) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }       </span><span style="color:#6A737D">// false — different object references</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (a.props </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> b.props) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> } </span><span style="color:#6A737D">// false — different frozen snapshots</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b)) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }   </span><span style="color:#6A737D">// true — same id</span></span></code></pre>
+<blockquote>
+<p><code>.equals()</code> compares <code>this.props.id === other.props.id</code>. Use it for all entity
+comparisons. <code>===</code> checks object identity, which is never what you want for entities.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-use-a-raw-string-for-entity-ids">Do Not Use a Raw string for Entity IDs</h3>
+<p><strong>ESSENTIAL</strong></p>
+<p>Raw <code>string</code> IDs are interchangeable — <code>UserId</code> fits where <code>OrderId</code> is expected.
+Use <code>createBrandedId</code> to make them distinct types:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">getUser</span><span style="color:#E1E4E8">(orderId);   </span><span style="color:#6A737D">// compiles — runtime bug</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({ brand: </span><span style="color:#9ECBFF">&#39;OrderId&#39;</span><span style="color:#E1E4E8">, schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderId</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">getUser</span><span style="color:#E1E4E8">(orderId);   </span><span style="color:#6A737D">// TypeScript error</span></span></code></pre>
+<blockquote>
+<p>BrandedId is a string at runtime — zero overhead. The safety is purely at compile time,
+which is exactly where these bugs live.</p>
+</blockquote>
+<hr/>
+<h2 id="priority-b-rules-recommended">Priority B Rules: Recommended</h2>
+<h3 id="do-not-write-actions-that-only-assign-a-single-field">Do Not Write Actions That Only Assign a Single Field</h3>
+<p><strong>RECOMMENDED</strong></p>
+<p>Auto-setters already exist for every Zod field. An action that does a single
+assignment is noise:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  updateBio</span><span style="color:#E1E4E8">(state, bio: string) { state.bio </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> bio; },</span></span>
+<span class="line"><span style="color:#B392F0">  setName</span><span style="color:#E1E4E8">(state, name: string) { state.name </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> name; },</span></span>
+<span class="line"><span style="color:#B392F0">  toggleVerified</span><span style="color:#E1E4E8">(state) { state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">state.emailVerified; },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Delete the actions above. Auto-setters already exist:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setBio</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;new bio&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setName</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setEmailVerified</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<blockquote>
+<p><strong>Exception:</strong> If the setter needs validation beyond Zod (e.g., <code>bio</code> must not
+contain URLs), write an action with a guard clause. The rule is: body of one
+assignment → delete. Guard clause, multi-field change, or event → keep.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-use-createaggregate-without-invariants">Do Not Use createAggregate Without Invariants</h3>
+<p><strong>RECOMMENDED</strong></p>
+<p>Aggregate’s only reason to exist over Entity is the <code>invariants</code> guarantee.
+An empty <code>invariants</code> array means you should use <code>createEntity</code>:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;User&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [],   </span><span style="color:#6A737D">// empty — no cross-field rules</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#6A737D">// Simpler, and you get auto-setters.</span></span></code></pre>
+<blockquote>
+<p><strong>Exception:</strong> You plan to add invariants soon and want the Aggregate structure
+in place. But add at least one invariant before committing — an empty array
+compiles but gives zero protection.</p>
+</blockquote>
+<hr/>
+<h3 id="keep-invariants-synchronous">Keep Invariants Synchronous</h3>
+<p><strong>RECOMMENDED</strong></p>
+<p>Invariants run on <code>.create()</code> and after every action. Async work here blocks
+the entire mutation pipeline:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">invariants</span><span style="color:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> exists</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#E1E4E8"> db.</span><span style="color:#B392F0">count</span><span style="color:#E1E4E8">({ where: { email: props.email } });</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (exists) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Email taken&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">]</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// In the use case:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> exists</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#E1E4E8"> repo.</span><span style="color:#B392F0">findByEmail</span><span style="color:#E1E4E8">(email);</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (exists) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> ConflictError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Email taken&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> user</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id, email, </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> });</span></span></code></pre>
+<blockquote>
+<p>Uniqueness checks, existence validation, and other external queries belong
+in the use case — before entity creation. Invariants validate the entity’s
+own state, not the outside world.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-return-domain-events-from-entity-actions">Do Not Return Domain Events from Entity Actions</h3>
+<p><strong>RECOMMENDED</strong></p>
+<p>Domain events are an Aggregate concern. Entity doesn’t have an event queue:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    verifyEmail</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#E1E4E8"> { event: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> } }; </span><span style="color:#6A737D">// ❌ Entity doesn&#39;t collect events</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Use Aggregate if you need domain events:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;User&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [</span><span style="color:#6A737D">/* ... */</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    verifyEmail</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> user.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span></code></pre>
+<blockquote>
+<p>Entity is for identity + behavior. Aggregate adds invariants + events.
+If you need events, you need an Aggregate.</p>
+</blockquote>
+<hr/>
+<h3 id="do-not-put-io-or-async-work-in-computed-properties">Do Not Put I/O or Async Work in Computed Properties</h3>
+<p><strong>RECOMMENDED</strong></p>
+<p>Computed properties run on every access. A network call here means your entity
+makes HTTP requests when you read a property:</p>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">computed</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  avatarUrl</span><span style="color:#E1E4E8">(props) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> s3.</span><span style="color:#B392F0">getSignedUrl</span><span style="color:#E1E4E8">(props.avatarKey); </span><span style="color:#6A737D">// ❌ every access → HTTP call</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// In the use case:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> avatarUrl</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#E1E4E8"> s3.</span><span style="color:#B392F0">getSignedUrl</span><span style="color:#E1E4E8">(user.props.avatarKey);</span></span>
+<span class="line"><span style="color:#F97583">return</span><span style="color:#E1E4E8"> { user, avatarUrl };</span></span></code></pre>
+<blockquote>
+<p>Computed is for synchronous derivation from props. I/O, async, and heavy
+computation belong in the use case.</p>
+</blockquote>
+<hr/>
+<h2 id="priority-c-rules-suggested">Priority C Rules: Suggested</h2>
+<h3 id="name-actions-as-verbs-in-domain-language">Name Actions as Verbs in Domain Language</h3>
+<p><strong>SUGGESTED</strong></p>
+<p>Use domain verbs, not CRUD verbs:</p>
+<p>✅ <strong>Prefer:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  verifyEmail</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },    </span><span style="color:#6A737D">// domain verb</span></span>
+<span class="line"><span style="color:#B392F0">  deactivate</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },     </span><span style="color:#6A737D">// domain verb</span></span>
+<span class="line"><span style="color:#B392F0">  transferOwnership</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }, </span><span style="color:#6A737D">// domain verb</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },           </span><span style="color:#6A737D">// domain verb</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>❌ <strong>Avoid:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  setEmailVerified</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> }, </span><span style="color:#6A737D">// CRUD — use auto-setter instead</span></span>
+<span class="line"><span style="color:#B392F0">  updateStatus</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },     </span><span style="color:#6A737D">// CRUD — what does &quot;update&quot; mean?</span></span>
+<span class="line"><span style="color:#B392F0">  changeOwner</span><span style="color:#E1E4E8">(state) { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },      </span><span style="color:#6A737D">// vague — &quot;transferOwnership&quot; is precise</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>The action name should tell you what business operation happened.
+If the name is just <code>setField</code>, use the auto-setter.</p>
+</blockquote>
+<hr/>
+<h3 id="place-one-entityaggregate-per-file">Place One Entity/Aggregate Per File</h3>
+<p><strong>SUGGESTED</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>src/domain/</span></span>
+<span class="line"><span>  user/</span></span>
+<span class="line"><span>    user.entity.ts</span></span>
+<span class="line"><span>    user.repository.ts</span></span>
+<span class="line"><span>  order/</span></span>
+<span class="line"><span>    order.aggregate.ts</span></span>
+<span class="line"><span>    order-item.entity.ts</span></span>
+<span class="line"><span>    order.repository.ts</span></span>
+<span class="line"><span>  shared/</span></span>
+<span class="line"><span>    money.vo.ts</span></span>
+<span class="line"><span>    user-id.brand.ts</span></span></code></pre>
+<blockquote>
+<p>Following the convention of “one domain concept per file” keeps imports
+predictable. The alternative (multiple entities per file) is acceptable
+for small domains where entities are closely related.</p>
+</blockquote>
+<hr/>
+<h3 id="use-the-narrowest-zod-schema-possible">Use the Narrowest Zod Schema Possible</h3>
+<p><strong>SUGGESTED</strong></p>
+<p>The narrower the schema, the fewer invalid values slip through:</p>
+<p>✅ <strong>Prefer:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">()        </span><span style="color:#6A737D">// not z.string()</span></span>
+<span class="line"><span style="color:#E1E4E8">z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">()    </span><span style="color:#6A737D">// not z.number()</span></span>
+<span class="line"><span style="color:#E1E4E8">z.</span><span style="color:#B392F0">enum</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;EUR&#39;</span><span style="color:#E1E4E8">])   </span><span style="color:#6A737D">// not z.string()</span></span>
+<span class="line"><span style="color:#E1E4E8">z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">()       </span><span style="color:#6A737D">// not z.string()</span></span></code></pre>
+<blockquote>
+<p>Zod validates at <code>.create()</code> — use it. An <code>email</code> field that accepts
+<code>&#39;notanemail&#39;</code> is a bug waiting to happen. The schema is your first
+line of defense.</p>
+</blockquote>
+<hr/>
+<h2 id="what-youve-learned">What you’ve learned</h2>
+<p><strong>Priority A rules prevent bugs.</strong> No <code>id</code> in Value Objects, no external
+validation of domain rules, no <code>===</code> for entity comparison, no raw <code>string</code>
+for entity IDs. Violate these and your domain model has holes.</p>
+<p><strong>Priority B rules keep code clean.</strong> No trivial actions, no empty invariants,
+no async invariants, no events in Entity, no I/O in computed. Violate these
+and your code works but becomes harder to maintain.</p>
+<p><strong>Priority C rules ensure consistency.</strong> Domain verbs for action names,
+one concept per file, narrow Zod schemas. Violate these and your code
+works fine — but your team will thank you for consistency.</p>
+<h2 id="next">Next</h2>
+<p>→ <a href="/docs/api/entity/">API Reference</a> — full config reference for every function</p> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
