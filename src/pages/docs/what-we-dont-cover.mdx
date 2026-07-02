@@ -1,0 +1,89 @@
+---
+title: "What we don't cover"
+description: "Honest boundaries of @sotajs/ddd — and why"
+layout: ../../layouts/DocsLayout.astro
+---
+
+`@sotajs/ddd` is a **domain modeling library**, not a framework. It covers the domain layer
+of tactical DDD. Things outside the domain layer are intentionally excluded.
+
+## What we cover
+
+| Construct | Provides |
+|---|---|
+| `createEntity` | Identity, typed actions, computed properties, auto-setters from schema, deepFreeze |
+| `createAggregate` | Required invariants, nested entity hydration, domain events (pull-based) |
+| `createValueObject` | Structural equality, immutability, optional actions |
+| `createBrandedId` | Compile-time nominal typing for IDs, validation on creation |
+
+## What we don't cover
+
+### Repositories
+
+Persistence belongs to the **infrastructure layer**, not the domain. The library doesn't dictate
+how you store or load aggregates. You write your own repository — typically 2 lines of mapping:
+
+```ts
+// Load
+const row = await db.order.findUnique({ where: { id } });
+const order = Order.create(row);
+
+// Save
+await db.order.upsert({ where: { id: order.id }, ...order.props });
+```
+
+### Event dispatch
+
+Aggregate actions **return** domain events; they don't dispatch them. Events accumulate
+in a queue inside the aggregate. You pull them with `getPendingEvents()` and decide
+when and how to dispatch — in a use case, in a transaction hook, or in an event bus.
+
+```ts
+order.actions.ship();
+const events = order.getPendingEvents();
+// Your dispatch logic here
+```
+
+This is pull-based by design: the domain layer produces events, the application layer
+decides what to do with them.
+
+### TypeORM / decorator-based ORMs
+
+`createEntity` returns a dynamically generated class. TypeORM and MikroORM require
+decorators on explicit class properties. These paradigms are structurally incompatible.
+
+If you're on TypeORM and want rich models, you can:
+- Add methods directly to your TypeORM entities (no library needed)
+- Use `@sotajs/ddd` with a separate domain class and map between them
+
+The library works with schema-first ORMs (Prisma), SQL builders (Drizzle, Knex),
+and raw queries — any approach where you load plain data and pass it to `.create()`.
+
+### Optimistic locking / concurrency control
+
+DDD assumes synchronous transactional consistency. Node's async/await event loop
+breaks this assumption. Protecting an aggregate from parallel mutations requires
+optimistic locking at the database level — `WHERE version = $expectedVersion`.
+
+This is an **infrastructure concern**, not a domain concern. The library provides
+no built-in concurrency control. You implement it in your repository.
+
+### Domain Services
+
+Stateless operations that don't belong to any single Entity or Aggregate — like
+a pricing service that calculates across multiple aggregates — are plain functions
+in your application layer. The library doesn't provide a `createDomainService` factory.
+
+### Specifications
+
+The Specification pattern (composable business rules as predicates) is useful
+but highly context-dependent. You can implement it with plain functions on top
+of the library. No built-in support.
+
+## Why these boundaries exist
+
+Tactical DDD is a system of layers. The domain layer (where `@sotajs/ddd` lives)
+is one of them. Infrastructure, application services, and presentation are separate
+concerns — each with its own tools and patterns.
+
+A library that tries to own all layers becomes a framework. We chose to be a library.

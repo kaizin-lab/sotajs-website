@@ -1,187 +1,202 @@
 ---
 title: "Getting Started"
-description: "Install and understand sotajs/ddd — a domain enforcement layer for TypeScript"
+description: "Full cycle: from Zod schema to use case — with Entity, Aggregate, and Repository"
 layout: ../../layouts/DocsLayout.astro
 ---
 
-## What is sotajs/ddd?
+## The full cycle in 60 lines
 
-**sotajs/ddd** is a zero-dependency TypeScript library that provides DDD building blocks
-as **enforced constructs**, not suggestions.
+You already write Zod schemas for API validation. `@sotajs/ddd` takes the same schema and gives you
+a typed, safe domain model. Here's the complete path — from schema to use case.
 
-It gives you four factories: `Entity`, `Aggregate`, `Value Object`, and `BrandedId`.
-Each enforces domain rules at runtime — invariants run on every mutation, state is
-immutable from the outside, and identity vs. structural equality is handled correctly.
-
-## Why this exists
-
-### The Gap
-
-NestJS — and most Node.js frameworks — give you excellent **application structure**:
-modules, dependency injection, controllers, providers.
-
-What they **don't** give you is **domain correctness enforcement**.
-
-In a real system, after 6–12 months:
-
-- Business rules scatter across services
-- "`if (order.status !== 'pending')`" appears in 7 different files
-- Entity state is mutated from anywhere
-- Domain logic leaks into controllers and infrastructure
-- No single source of truth for what a valid Order looks like
-
-### The Solution
-
-**sotajs/ddd** sits **inside your NestJS modules** (or any framework) and enforces:
-
-1. **Invariants** — checked on creation and after every mutation
-2. **Encapsulation** — state is mutated only through defined actions
-3. **Identity** — entities compared by ID, not by value
-4. **Boundaries** — Aggregates are transactional consistency boundaries
-
-NestJS handles the **application boundary**. We handle the **domain boundary**.
-
-## Installation
-
-```bash
-npm install @sotajs/ddd
-```
-
-Requirements: **TypeScript ^5.0**. No other runtime dependencies.
-
-## Your First Entity
+## 1. Define your Entity
 
 ```ts
-import { createEntity } from "@sotajs/ddd";
-import { z } from "zod"; // optional — any validator works
+import { z } from 'zod';
+import { createEntity } from '@sotajs/ddd';
 
-const User = createEntity({
-  validate: (data) =>
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      email: z.string().email().optional(),
-    }).parse(data),
+const UserProfileSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+});
+type UserProfileProps = z.infer<typeof UserProfileSchema>;
 
+export const UserProfile = createEntity({
+  schema: UserProfileSchema,
   actions: {
-    rename: (draft, newName: string) => {
-      draft.name = newName;
+    updateBio(state, bio: string) {
+      state.bio = bio;
     },
-    setEmail: (draft, email: string) => {
-      draft.email = email;
+    updateUsername(state, name: string) {
+      state.username = name;
+    },
+  },
+  computed: {
+    displayName(props) {
+      return props.username;
     },
   },
 });
-
-const user = User.create({ id: "1", name: "Alice" });
-
-// Read state (frozen — cannot be mutated from outside)
-console.log(user.props.name); // "Alice"
-
-// Mutate through actions only
-user.actions.rename("Alicia");
-console.log(user.props.name); // "Alicia"
-
-// Identity comparison
-const sameUser = User.create({ id: "1", name: "Bob" });
-console.log(user.equals(sameUser)); // true (same ID)
+export type UserProfile = ReturnType<typeof UserProfile.create>;
 ```
 
-## Your First Aggregate
-
-An Aggregate is a transactional boundary. It enforces invariants,
-hydrates nested entities, and collects domain events.
+> **What just happened?** Your Zod schema defined the shape and validation.
+> `actions` named the operations you can do. `computed` declared derived properties.
+> `ReturnType<typeof UserProfile.create>` gave you the entity instance type — no manual type declarations.
 
 ```ts
-import { createAggregate } from "@sotajs/ddd";
+// Usage
+const profile = UserProfile.create({
+  id: 'b3f1ae2c-abcd',
+  username: 'alice',
+});
 
-const Order = createAggregate({
-  name: "Order",
-  validate: (data) =>
-    z.object({
-      id: z.string(),
-      items: z.array(z.object({
-        productId: z.string(),
-        quantity: z.number().min(1),
-      })),
-    }).parse(data),
+profile.actions.updateBio('new bio');
+console.log(profile.displayName); // 'alice'
+```
 
+## 2. Compose into an Aggregate
+
+When multiple entities must stay consistent together, wrap them in an Aggregate:
+
+```ts
+import { createAggregate } from '@sotajs/ddd';
+
+const OrderSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['pending', 'confirmed', 'shipped']),
+  amountPaid: z.number(),
+  customerInfo: UserProfileSchema, // nested entity
+});
+type OrderProps = z.infer<typeof OrderSchema>;
+
+export const Order = createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  entities: {
+    customerInfo: UserProfile, // auto-hydrated into an entity instance
+  },
   invariants: [
     (props) => {
-      if (props.items.length === 0) {
-        throw new Error("Order must have at least one item");
+      if (props.status === 'confirmed' && props.amountPaid === 0) {
+        throw new Error('Cannot confirm unpaid order');
       }
     },
   ],
-
   actions: {
-    addItem: (draft, item) => {
-      draft.items.push(item);
-    },
-    ship: (draft) => {
-      if (draft.status !== "pending") {
-        throw new Error("Only pending orders can be shipped");
-      }
-      draft.status = "shipped";
-      // Return a domain event
-      return {
-        event: {
-          aggregateId: draft.id,
-          timestamp: new Date(),
-          type: "OrderShipped",
-        },
-      };
+    confirm(state) {
+      state.status = 'confirmed';
     },
   },
-
-  computed: {
-    itemCount: (props) => props.items.length,
-    total: (props) => props.items.reduce((s, i) => s + i.quantity, 0),
-  },
 });
-
-const order = Order.create({
-  id: "o1",
-  items: [{ productId: "p1", quantity: 2 }],
-});
-
-// Invariant: cannot create with zero items
-// Order.create({ id: "o2", items: [] }); // throws
-
-order.actions.addItem({ productId: "p2", quantity: 1 });
-order.actions.ship();
-
-// Collect domain events
-const events = order.getPendingEvents();
-// [{ aggregateId: "o1", timestamp: ..., type: "OrderShipped" }]
+export type Order = ReturnType<typeof Order.create>;
 ```
 
-## Design Principles
+> `invariants` is **required**. TypeScript won't compile without it. Invariants
+> run on `.create()` and after every action. You cannot forget them.
 
-### 1. Zero dependencies
+```ts
+// Invariant catches violations at creation time:
+Order.create({ id: '...', status: 'confirmed', amountPaid: 0 });
+// Error: Cannot confirm unpaid order
 
-No Zod, no Immer, no DI container. You bring your own validator.
-The library is pure TypeScript with no runtime imports.
+const order = Order.create({ id: '...', status: 'pending', amountPaid: 100 });
+order.actions.confirm(); // ok — amountPaid > 0
 
-### 2. Enforced, not suggested
+// Nested entity is a real entity instance, not a plain object:
+order.state.customerInfo.actions.updateBio('VIP customer');
+```
 
-Invariants are **not documentation**. They run at runtime.
-Violate a business rule → the action throws.
+## 3. Write a Repository
 
-### 3. Framework-agnostic
+The library doesn't dictate persistence. Here's how it looks with Prisma:
 
-Works with NestJS, Express, Fastify, or plain Node.js.
-It defines domain constructs — it doesn't care how you wire infrastructure.
+```ts
+// order.repository.ts
+import { prisma } from './db';
+import { Order } from './order.aggregate';
 
-### 4. Bring your own validator
+export const orderRepository = {
+  async findById(id: string): Promise<Order | null> {
+    const row = await prisma.order.findUnique({
+      where: { id },
+      include: { customerInfo: true },
+    });
+    return row ? Order.create(row) : null;
+  },
 
-The `validate` callback receives `unknown` and returns typed props.
-Use Zod, Valibot, TypeBox, or write a plain function.
-The library only cares that you return the right shape or throw.
+  async save(order: Order): Promise<void> {
+    await prisma.order.upsert({
+      where: { id: order.id },
+      create: { ...order.props },
+      update: { ...order.props },
+    });
+  },
+};
+```
 
-## Next Steps
+> That's it. Two lines of mapping: `Order.create(row)` on load,
+> `{ ...order.props }` on save. The library doesn't care about your ORM.
 
-- [Entity API](/docs/api/entity/) — full reference
-- [Aggregate API](/docs/api/aggregate/) — transactions, invariants, events
-- [Value Object API](/docs/api/value-object/) — structural equality
-- [BrandedId API](/docs/api/branded-id/) — typed identity
+Same pattern with Drizzle or Knex — load raw data, pass to `.create()`.
+
+## 4. Write a Use Case
+
+```ts
+// confirm-order.command.ts
+import { orderRepository } from './order.repository';
+
+export const confirmOrderCommand = async (orderId: string) => {
+  const order = await orderRepository.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  order.actions.confirm();
+  await orderRepository.save(order);
+
+  // Collect domain events if any:
+  const events = order.getPendingEvents();
+  // dispatch(events) — your event bus, your rules
+
+  return { id: order.id, status: order.props.status };
+};
+```
+
+> The use case is a plain async function. No framework, no decorators.
+> Works in NestJS controllers, Express handlers, or Lambda functions.
+
+## 5. Wire it up (NestJS example)
+
+```ts
+// order.controller.ts
+import { Controller, Post, Param } from '@nestjs/common';
+import { confirmOrderCommand } from './confirm-order.command';
+
+@Controller('orders')
+export class OrderController {
+  @Post(':id/confirm')
+  async confirm(@Param('id') id: string) {
+    return confirmOrderCommand(id);
+  }
+}
+```
+
+The controller knows nothing about the domain. The domain knows nothing about HTTP.
+The library sits in between — giving you typed, safe domain objects.
+
+## What you just built
+
+```
+ZodSchema → createEntity → createAggregate → Repository → UseCase → Controller
+```
+
+The library contributed four lines: `createEntity`, `createAggregate`, `createBrandedId`, `createValueObject`.
+Everything else is plain TypeScript and your framework of choice.
+
+## Next steps
+
+- [Entity API](/docs/api/entity/) — full config reference
+- [Aggregate API](/docs/api/aggregate/) — transactions, invariants, events, nested entities
+- [Value Object API](/docs/api/value-object/) — structural equality, immutability
+- [BrandedId API](/docs/api/branded-id/) — typed identity at compile time
+- [What we don't cover](/docs/what-we-dont-cover/) — honest boundaries of the library
