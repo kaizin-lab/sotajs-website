@@ -4,22 +4,32 @@ description: "How to use @sotajs/ddd — from first entity to production pattern
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-Practical guides for using `@sotajs/ddd`. Each guide is self-contained — read in order or jump to what you need.
+Practical guides for using `@sotajs/ddd`. Each guide is self-contained — read in order
+or jump to what you need. Anti-patterns are embedded in every guide: ❌ shows the mistake,
+✅ shows the fix.
 
-## Core
+## Core workflow
 
 - [Creating Entities](/docs/guides/creating-entities/) — from Zod schema to rich domain entity
-- [Actions vs Auto-setters](/docs/guides/actions-vs-setters/) — when to write custom actions
-- [Building Aggregates](/docs/guides/aggregates/) — invariants, nested entities, domain events
+- [Reading and Mutating State](/docs/guides/reading-mutating-state/) — props, auto-setters, identity
+- [Actions](/docs/guides/actions/) — business logic with validation and guard clauses
+- [Computed Properties](/docs/guides/computed-properties/) — derived values from entity state
 
-## Patterns
+## Domain integrity
+
+- [Invariants](/docs/guides/invariants/) — cross-field consistency rules and where they live
+- [Value Objects](/docs/guides/value-objects/) — structural equality for values without identity
+- [Branded IDs](/docs/guides/branded-ids/) — compile-time safety for entity identifiers
+
+## End-to-end
+
+- [Building Aggregates](/docs/guides/aggregates/) — transactional boundaries, nested entities, events
+- [Testing](/docs/guides/testing/) — unit-test domain logic without mocks
+
+## Integration
 
 - [ORM Integration](/docs/orm-integration/) — repository patterns for Prisma, Drizzle, Knex
 - [What we don't cover](/docs/what-we-dont-cover/) — honest boundaries of the library
-
-## Quality
-
-- [Anti-patterns](/docs/guides/anti-patterns/) — common mistakes and how to fix them
 
 ## Reference
 

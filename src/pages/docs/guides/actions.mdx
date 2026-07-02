@@ -1,0 +1,157 @@
+---
+title: "Actions"
+description: "Business logic with validation — when mutations carry domain meaning"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+An action is a method on your entity that mutates state **with intent**.
+It's not `setField(value)` — that's an auto-setter. An action earns its place
+through validation, conditional logic, or multi-field changes.
+
+## Anatomy of an action
+
+```ts
+actions: {
+  verifyEmail(state) {
+    if (state.emailVerified) throw new Error('Already verified');
+    state.emailVerified = true;
+  },
+}
+```
+
+- `state` is a mutable draft of the entity's props. Mutate it directly.
+- After the action returns, state is frozen and invariants (if any) are checked.
+- Throw an `Error` to reject the mutation — state is rolled back.
+
+## Guard clauses — make illegal states unrepresentable
+
+The core job of an action is to reject mutations that would put the entity
+in an invalid state:
+
+```ts
+actions: {
+  addRole(state, role: string) {
+    if (!VALID_ROLES.includes(role)) throw new Error(`Unknown role: ${role}`);
+    if (state.roles.includes(role)) throw new Error(`Already has role: ${role}`);
+    state.roles.push(role);
+  },
+  removeRole(state, role: string) {
+    if (role === 'admin' && state.roles.length === 1) {
+      throw new Error('Cannot remove last admin');
+    }
+    state.roles = state.roles.filter(r => r !== role);
+  },
+}
+```
+
+❌ **Validating outside the entity:**
+
+```ts
+// In the controller:
+if (!user.props.emailVerified) {
+  throw new BadRequestException('Verify email first');
+}
+user.actions.deactivate();
+```
+
+> The guard `is email verified?` belongs in `deactivate()`, not in the controller.
+> When you validate outside, every caller must remember the precondition.
+> When you validate inside, the entity enforces its own rules.
+
+## Multi-field atomic changes
+
+When two fields must change together or not at all:
+
+```ts
+actions: {
+  transferOwnership(state, newOwnerId: string) {
+    state.previousOwnerId = state.ownerId;
+    state.ownerId = newOwnerId;
+    state.transferredAt = new Date();
+  },
+}
+```
+
+❌ **Splitting atomic changes across calls:**
+
+```ts
+user.actions.setOwnerId(newId);
+user.actions.setTransferredAt(new Date());
+// Between these calls, ownerId is new but transferredAt is stale
+```
+
+> If the two mutations represent one business operation, make it one action.
+> Callers can call auto-setters in any order — and leave intermediate states no one intended.
+
+## Action that rejects on invalid state transition
+
+```ts
+actions: {
+  ship(state) {
+    if (state.status !== 'confirmed') {
+      throw new Error('Only confirmed orders can be shipped');
+    }
+    state.status = 'shipped';
+    return { event: { aggregateId: state.id, timestamp: new Date() } };
+  },
+}
+```
+
+The guard enforces the state machine: `pending → confirmed → shipped`.
+No caller can accidentally ship an unconfirmed order.
+
+❌ **Trusting the caller to know the state:**
+
+```ts
+actions: {
+  ship(state) {
+    state.status = 'shipped'; // hopes caller checked first
+  },
+}
+```
+
+> An entity that can be put in an invalid state by calling its own method
+> has leaked its invariants. Every action should protect its own preconditions.
+
+## Domain events from actions
+
+Actions in an Aggregate can return `{ event }`:
+
+```ts
+actions: {
+  confirm(state) {
+    state.status = 'confirmed';
+    return { event: { aggregateId: state.id, timestamp: new Date() } };
+  },
+}
+```
+
+Events accumulate in a queue. Pull them after your use case:
+
+```ts
+order.actions.confirm();
+const events = order.getPendingEvents();
+// dispatch to event bus, email service, analytics...
+```
+
+> Events are pull-based by design. No hidden side effects.
+> If you don't return them, they don't exist. If you don't pull them, nothing happens.
+
+## Decision tree: action or auto-setter?
+
+```
+Does the mutation have business meaning beyond "change this value"?
+  ├── NO  → auto-setter (setField)
+  └── YES → action
+       ├── Guard clause needed?          → action
+       ├── Multiple fields together?     → action
+       ├── State machine transition?     → action
+       ├── Domain event returned?        → action (Aggregate)
+       └── Validation beyond Zod schema? → action
+```
+
+## Next
+
+- [Invariants](/docs/guides/invariants/) — cross-field consistency rules
+- [Computed Properties](/docs/guides/computed-properties/) — derived values from state
+- [Building Aggregates](/docs/guides/aggregates/) — where actions meet invariants

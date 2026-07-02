@@ -1,0 +1,142 @@
+---
+title: "Computed Properties"
+description: "Derived values from entity state — what they are and what they aren't"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+Computed properties derive values from entity props. They're accessed as properties
+(no function call) and recalculated on every access from the current state.
+
+## Defining computed
+
+```ts
+computed: {
+  displayName(props) { return props.username; },
+  isVerified(props)  { return props.emailVerified; },
+  initials(props)    { return props.username.slice(0, 2).toUpperCase(); },
+}
+```
+
+Usage:
+
+```ts
+user.displayName;  // 'alice' — not user.displayName()
+user.isVerified;   // false
+user.initials;     // 'AL'
+```
+
+They look like getters, work like getters, but are defined alongside your schema and actions.
+
+## Why not class getters?
+
+You could write:
+
+```ts
+class User {
+  get displayName() { return this.username; }
+}
+```
+
+But computed properties live in the entity config — next to the schema that defines
+the fields they read from. No splitting logic between `createEntity()` call and
+a separate class body.
+
+## What computed is FOR
+
+- Formatting: `initials`, `fullName`, `abbreviatedAddress`
+- Boolean checks: `isVerified`, `isExpired`, `hasChildren`
+- Aggregations: `totalPrice = items.reduce(...)`, `wordCount`
+- Lookups: `primaryEmail = emails[0]`
+
+Keep them synchronous, pure, and fast.
+
+## What computed is NOT for
+
+❌ **I/O in computed:**
+
+```ts
+computed: {
+  avatarUrl(props) {
+    return s3.getSignedUrl(props.avatarKey); // ❌ runs on every property access
+  },
+}
+```
+
+> Computed runs on every access. A network call here means your entity is making
+> HTTP requests when you read a property. Generate signed URLs at the use-case level.
+
+❌ **Heavy computation:**
+
+```ts
+computed: {
+  recommendationScore(props) {
+    return mlModel.predict(props.history); // ❌ CPU-heavy, runs on every access
+  },
+}
+```
+
+> If the value is expensive to compute, calculate it once in the use case
+> and attach it as a separate return value or a dedicated field.
+
+❌ **Mutating state from computed:**
+
+```ts
+computed: {
+  nextId(props) {
+    props.counter++;     // ❌ computed should never mutate
+    return props.counter;
+  },
+}
+```
+
+> Computed receives a read-only snapshot. Mutating it has undefined behavior.
+> Use an action if you need to change state.
+
+❌ **Async computed:**
+
+```ts
+computed: {
+  async recommendations(props) { ... } // ❌ not supported
+}
+```
+
+> Computed is synchronous. If you need async derivation, compute it before
+> creating the entity or run it in the use case.
+
+## Computed vs. action — the line
+
+| Computed | Action |
+|---|---|
+| Reads state, returns value | Reads state, mutates state |
+| No side effects | Changes entity state |
+| Property access (`user.isVerified`) | Method call (`user.actions.verifyEmail()`) |
+| Can't reject or throw (design intent) | Can throw to reject mutation |
+
+❌ **Using an action when computed would do:**
+
+```ts
+actions: {
+  getDisplayName(state) { return state.username; }, // ❌ this is computed territory
+}
+```
+
+> If it reads state and returns a value without mutating — make it a computed property.
+
+❌ **Using computed to enforce validation:**
+
+```ts
+computed: {
+  isValid(props) {
+    if (props.items.length === 0) return false; // silently returns false
+    return true;
+  },
+}
+```
+
+> Don't use computed for validation. Invariants (on Aggregate) or guard clauses
+> (in actions) actively reject invalid states. Computed is passive.
+
+## Next
+
+- [Invariants](/docs/guides/invariants/) — active validation that rejects invalid states
+- [Actions](/docs/guides/actions/) — mutations with business meaning

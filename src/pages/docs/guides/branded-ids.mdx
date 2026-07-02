@@ -1,0 +1,152 @@
+---
+title: "Branded IDs"
+description: "Compile-time safety — prevent mixing up UserId and OrderId"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+A BrandedId is a `string` at runtime and a unique type at compile time.
+`UserId` won't fit where `OrderId` is expected — TypeScript catches the mistake
+before it reaches production.
+
+## The problem it solves
+
+```ts
+function getUser(id: string) { ... }
+function getOrder(id: string) { ... }
+
+const userId = 'abc-123';
+const orderId = 'def-456';
+
+getUser(orderId);   // compiles fine — both are string
+getOrder(userId);   // compiles fine — runtime bug waiting to happen
+```
+
+Every `string` is assignable to every other `string`. BrandedId breaks that.
+
+## Creating a BrandedId
+
+```ts
+import { z } from 'zod';
+import { createBrandedId } from '@sotajs/ddd';
+
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+type UserId = ReturnType<typeof UserId.create>;
+
+const OrderId = createBrandedId({ brand: 'OrderId', schema: z.string().uuid() });
+type OrderId = ReturnType<typeof OrderId.create>;
+```
+
+Usage:
+
+```ts
+const userId = UserId.create('b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3');
+// userId is a string at runtime, branded as UserId at compile time
+
+const orderId = OrderId.create('d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8');
+```
+
+❌ **Using raw `string` for entity IDs:**
+
+```ts
+function assignOrder(userId: string, orderId: string) {
+  // Nothing stops you from swapping them:
+  assignOrder(orderId, userId); // compiles, runtime bug
+}
+```
+
+✅ **With branded types:**
+
+```ts
+function assignOrder(userId: UserId, orderId: OrderId) {
+  // ...
+}
+
+assignOrder(orderId, userId);
+//          ^^^^^^^ TypeScript error: OrderId is not assignable to UserId
+```
+
+> The compiler catches the swap. Runtime behavior is identical — both are strings.
+> The safety is purely at compile time, which is where these bugs live.
+
+## Brand as a compile-time discriminant
+
+The `brand` string is never present at runtime. It's a TypeScript ghost field —
+it exists only to make `UserId` and `OrderId` distinct types:
+
+```ts
+const a = UserId.create('b3f1...');
+typeof a; // 'string'
+a.brand;  // TypeScript error — brand doesn't exist at runtime
+```
+
+❌ **Using the same brand by accident:**
+
+```ts
+const UserId = createBrandedId({ brand: 'EntityId', schema: z.string().uuid() });
+const OrderId = createBrandedId({ brand: 'EntityId', schema: z.string().uuid() });
+// Same brand — UserId and OrderId are the same type
+```
+
+> The brand string is the type discriminator. Use unique brands: `'UserId'`, `'OrderId'`,
+> `'ProductId'`. If two types share a brand, they're the same type.
+
+## Schema validation
+
+The `schema` parameter validates at creation time:
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string().uuid() });
+
+UserId.create('not-a-uuid'); // throws ZodError
+UserId.create('b3f1ae2c-abcd-4e5f-a6b7-c8d9e0f1a2b3'); // ok
+```
+
+❌ **Skipping the schema:**
+
+```ts
+const UserId = createBrandedId({ brand: 'UserId', schema: z.string() });
+// Any string passes. 'admin' is a valid UserId.
+```
+
+> Use the most restrictive schema that's correct: `z.string().uuid()` for UUIDs,
+> `z.string().cuid2()` for CUIDs, `z.string().regex(...)` for custom formats.
+> The narrower the schema, the fewer invalid values slip through.
+
+## BrandedId in entity schemas
+
+Use branded IDs as entity id fields:
+
+```ts
+const UserSchema = z.object({
+  id: UserId.schema,          // uses the branded ID's Zod schema
+  username: z.string(),
+});
+
+const OrderSchema = z.object({
+  id: OrderId.schema,
+  userId: UserId.schema,      // cross-entity reference — type-safe
+  status: z.enum(['pending', 'confirmed']),
+});
+```
+
+Now `order.props.userId` is typed as `UserId`, not `string`. You can't pass
+an `OrderId` where a `UserId` is expected.
+
+## BrandedId as function parameters
+
+```ts
+async function getUserOrders(userId: UserId): Promise<Order[]> { ... }
+async function getOrderById(orderId: OrderId): Promise<Order> { ... }
+
+// This compiles because both are strings at runtime:
+getUserOrders(OrderId.create('...')); // ❌ TypeScript error
+getOrderById(UserId.create('...'));   // ❌ TypeScript error
+```
+
+> Same pattern throughout your codebase: repository methods, use cases, API handlers —
+> all accept branded types instead of raw strings. The compiler enforces correctness.
+
+## Next
+
+- [Value Objects](/docs/guides/value-objects/) — structural equality for values without identity
+- [ORM Integration](/docs/orm-integration/) — persisting branded IDs with Prisma/Drizzle/Knex

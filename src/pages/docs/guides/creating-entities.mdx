@@ -1,27 +1,45 @@
 ---
 title: "Creating Entities"
-description: "From Zod schema to rich domain entity — with actions, auto-setters, and computed properties"
+description: "From Zod schema to rich domain entity — the complete lifecycle"
 layout: ../../../layouts/DocsLayout.astro
 ---
 
-An Entity is an object with identity. It has an `id`, mutable state changed only through defined actions,
-and computed (derived) properties. This guide walks through creating one from scratch.
+An Entity has identity, mutable state changed only through defined actions,
+and computed properties. This guide walks through every decision from schema to usage.
 
-## 1. Start with a Zod schema
+## 1. Your Zod schema is the starting point
 
-You already write Zod schemas for API validation. That's your starting point:
+You already validate API payloads with Zod. That same schema becomes your entity's type system:
 
 ```ts
 import { z } from 'zod';
 
 const UserSchema = z.object({
   id: z.string().uuid(),
-  username: z.string(),
+  username: z.string().min(3),
   bio: z.string().optional(),
   emailVerified: z.boolean().default(false),
 });
 type UserProps = z.infer<typeof UserSchema>;
 ```
+
+No duplication. Write once, use everywhere.
+
+❌ **Skipping Zod and writing raw validators:**
+
+```ts
+// Don't do this — you lose type inference and auto-setters
+createEntity({
+  validate: (data) => {
+    if (typeof data.id !== 'string') throw new Error('bad id');
+    return data;
+  },
+  actions: {},
+});
+```
+
+> `schema` gives you auto-setters from `schema.shape`. A raw `validate` callback loses that.
+> Zod → full inference + auto-setters, for free.
 
 ## 2. Wrap it in createEntity
 
@@ -35,31 +53,30 @@ const User = createEntity({
 type User = ReturnType<typeof User.create>;
 ```
 
-That's a valid entity. It has identity, frozen props, equals — but no custom behavior yet.
-You already get auto-setters for every non-`id` field:
+That's a valid entity. Identity, frozen props, structural equality — all working.
+And you get auto-setters for every non-`id` field:
 
 ```ts
-const user = User.create({ id: '...', username: 'alice' });
-user.actions.setUsername('alicia');  // auto-generated
-user.actions.setBio('new bio');       // auto-generated
-user.props.username; // 'alicia'
+const user = User.create({ id: 'b3f1...', username: 'alice' });
+user.actions.setBio('TypeScript person');   // typed: string | undefined → string
+user.actions.setEmailVerified(true);        // typed: boolean → boolean
 ```
 
-## 3. Add actions — for business logic, not setters
-
-Auto-setters handle simple field assignment. **Actions are for operations that carry business meaning.**
-
-❌ **Bad — trivial setter disguised as action:**
+❌ **Wrapping auto-setters in actions:**
 
 ```ts
 actions: {
-  updateBio(state, bio: string) {
-    state.bio = bio; // auto-setter already does this
-  },
+  updateBio(state, bio: string) { state.bio = bio; },
+  toggleVerified(state) { state.emailVerified = !state.emailVerified; },
 }
 ```
 
-✅ **Good — action with business logic:**
+> `setBio()` and `setEmailVerified()` already exist. Writing action wrappers is noise.
+> If your action body does a single assignment — delete it.
+
+## 3. Add actions — for business logic
+
+Auto-setters handle raw field mutation. Actions carry **business meaning**:
 
 ```ts
 actions: {
@@ -68,44 +85,61 @@ actions: {
     state.emailVerified = true;
   },
   deactivate(state) {
-    if (state.emailVerified) throw new Error('Must verify email first');
+    if (!state.emailVerified) throw new Error('Must verify email first');
     state.status = 'inactive';
   },
 }
 ```
 
-> Rule: if your action body is a single assignment, delete it — an auto-setter already exists.
-> Actions earn their place through validation, conditional logic, or multi-field changes.
+Why `verifyEmail` exists but `updateBio` doesn't: verification has a guard clause
+and carries domain semantics. Changing a bio is just data entry.
+
+❌ **Validating outside the entity:**
+
+```ts
+// Controller — bad:
+if (!user.props.emailVerified) throw new Error('not verified');
+user.actions.deactivate();
+```
+
+> The guard should be inside `deactivate()`. An entity that can be put in an invalid
+> state by calling actions in the wrong order has leaked its invariants.
+> Make the action defensive — callers shouldn't need to know preconditions.
 
 ## 4. Add computed — derived values as properties
 
 ```ts
 computed: {
-  displayName(props) {
-    return props.username;
-  },
-  isVerified(props) {
-    return props.emailVerified;
-  },
-  initials(props) {
-    return props.username.slice(0, 2).toUpperCase();
-  },
+  displayName(props) { return props.username; },
+  isVerified(props) { return props.emailVerified; },
+  initials(props) { return props.username.slice(0, 2).toUpperCase(); },
 }
 ```
 
 Usage:
 
 ```ts
-const user = User.create({ id: '...', username: 'alice' });
-user.displayName; // 'alice' — property, not function call
-user.isVerified;  // false
-user.initials;    // 'AL'
+user.displayName;  // 'alice' — property access, not function call
+user.isVerified;   // false
+user.initials;     // 'AL'
 ```
 
-> Computed values recalculate from current props on every access. Keep them fast —
-> no I/O, no async, no heavy computation. If you need caching, do it at the use case level.
+Recalculated from current props on every access. Keep them fast — no I/O, no async.
 
-## 5. The full entity
+❌ **Heavy computation in computed:**
+
+```ts
+computed: {
+  topFriends(props) {
+    return db.query('SELECT ...'); // ❌ runs on every access
+  },
+}
+```
+
+> If the value requires I/O or caching, calculate it in the use case and pass it
+> as a separate return value. Computed is for synchronous derivation from props.
+
+## 5. The complete entity
 
 ```ts
 import { z } from 'zod';
@@ -113,7 +147,7 @@ import { createEntity } from '@sotajs/ddd';
 
 const UserSchema = z.object({
   id: z.string().uuid(),
-  username: z.string(),
+  username: z.string().min(3),
   bio: z.string().optional(),
   emailVerified: z.boolean().default(false),
   status: z.enum(['active', 'inactive']).default('active'),
@@ -144,15 +178,15 @@ const User = createEntity({
 type User = ReturnType<typeof User.create>;
 ```
 
-## 6. Use it
+## 6. Using the entity
 
 ```ts
 const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice' });
 
-// Auto-setters for simple fields
+// Auto-setter: simple field mutation
 user.actions.setBio('TypeScript enthusiast');
 
-// Actions for business operations
+// Action: business operation with guard clause
 user.actions.verifyEmail();
 user.actions.deactivate();
 
@@ -162,12 +196,12 @@ user.displayName;       // 'alice'
 user.isVerified;        // true
 
 // Identity comparison
-const same = User.create({ id: 'b3f1ae2c-abcd', username: 'bob' });
-user.equals(same); // true — same id
+user.equals(User.create({ id: 'b3f1ae2c-abcd', username: 'bob' }));
+// true — same id, different props
 ```
 
 ## Next
 
-- [Actions vs Auto-setters](/docs/guides/actions-vs-setters/) — when to use which
-- [Building Aggregates](/docs/guides/aggregates/) — invariants, nested entities, events
-- [Entity API reference](/docs/api/entity/) — full config reference
+- [Reading and Mutating State](/docs/guides/reading-mutating-state/) — auto-setters in depth
+- [Actions](/docs/guides/actions/) — when actions earn their place
+- [Computed Properties](/docs/guides/computed-properties/) — derived values done right

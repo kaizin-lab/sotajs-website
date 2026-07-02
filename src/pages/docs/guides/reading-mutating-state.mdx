@@ -1,0 +1,135 @@
+---
+title: "Reading and Mutating State"
+description: "How to read entity props and when auto-setters are all you need"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+Entity state is read through `props` and mutated through auto-setters.
+No getters, no manual setters — the library handles both.
+
+## Reading state
+
+```ts
+const user = User.create({ id: 'b3f1...', username: 'alice' });
+
+user.props.username;       // 'alice'
+user.props.emailVerified;  // false
+```
+
+`props` returns a frozen snapshot. You can read any field, but you can't mutate it directly:
+
+```ts
+user.props.username = 'hacker'; // TypeError: Cannot assign to read only property
+```
+
+> The object is `Object.freeze()`'d. This is a debug-time guard — not a security boundary.
+> It catches accidental mutation, which is the most common source of "how did this value change?" bugs.
+
+❌ **Storing props in a local variable and expecting updates:**
+
+```ts
+const { username } = user.props;
+user.actions.setUsername('alicia');
+username; // still 'alice' — you destructured a snapshot
+```
+
+> `props` is a snapshot, not a reactive reference. Always read `user.props.username`
+> after mutations if you need the current value.
+
+❌ **Mutating nested objects/arrays from props:**
+
+```ts
+user.props.tags.push('admin'); // mutates the frozen snapshot? No — but don't rely on this
+```
+
+> Frozen objects don't freeze nested arrays. Don't mutate anything from `props`.
+> Use actions (or auto-setters for flat fields). For nested mutations, see [Actions](/docs/guides/actions/).
+
+## Auto-setters — the default for simple mutation
+
+Every Zod field (except `id`) gets a typed auto-setter:
+
+```ts
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  age: z.number(),
+  status: z.enum(['active', 'inactive']),
+});
+
+// Auto-generated, fully typed:
+user.actions.setUsername('alicia');   // string → ✓
+user.actions.setAge(30);              // number → ✓
+user.actions.setStatus('inactive');   // 'active' | 'inactive' → ✓
+user.actions.setAge('30');            // TypeScript error: not a number
+user.actions.setStatus('banned');     // TypeScript error: not in enum
+```
+
+Auto-setters are discovered from `schema.shape`. They always exist for Zod/Valibot schemas,
+no trial validation needed.
+
+❌ **Writing manual setters as actions:**
+
+```ts
+actions: {
+  setName(state, name: string) { state.name = name; },
+  setAge(state, age: number) { state.age = age; },
+  setStatus(state, s: string) { state.status = s; },
+}
+```
+
+> Three actions that do what auto-setters already do. Delete them.
+> The user writes `user.actions.setName('alice')` regardless — you just moved
+> the definition into your entity config for no benefit.
+
+## When auto-setters ARE enough
+
+A surprising amount of domain logic is just "set this field to that value":
+
+```ts
+// All handled by auto-setters:
+user.actions.setBio('new bio');
+user.actions.setAvatarUrl('https://...');
+user.actions.setLastLoginAt(new Date());
+user.actions.setProfileComplete(true);
+```
+
+Each one is a single assignment. No validation, no guards, no multi-field changes.
+Auto-setters handle every one without you writing a line.
+
+## When auto-setters are NOT enough
+
+Auto-setters are pure assignment. You need an [Action](/docs/guides/actions/) when:
+
+| Situation | Tool |
+|---|---|
+| Guard clause before mutation | Action |
+| Multi-field change (atomic) | Action |
+| Domain event emission | Action (Aggregate) |
+| Validation beyond Zod | Action |
+| State machine transition logic | Action |
+
+## Identity and equality
+
+Entities compare by identity, not by props:
+
+```ts
+const a = User.create({ id: 'abc', username: 'alice' });
+const b = User.create({ id: 'abc', username: 'bob' });
+
+a.equals(b);   // true — same id
+a === b;       // false — different object references
+```
+
+❌ **Comparing entities with `===`:**
+
+```ts
+if (userA === userB) { ... } // compares object identity, not entity identity
+```
+
+> Use `.equals()` for entity comparison. `===` checks if it's literally the same object.
+
+## Next
+
+- [Actions](/docs/guides/actions/) — when a mutation needs business logic
+- [Computed Properties](/docs/guides/computed-properties/) — derived values from state

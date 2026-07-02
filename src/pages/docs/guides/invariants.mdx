@@ -1,0 +1,156 @@
+---
+title: "Invariants"
+description: "Cross-field consistency rules — where they live and why they matter"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+An invariant is a rule that must always be true for the entity/aggregate,
+no matter what actions were called. Invariants are the backbone of domain integrity.
+
+## Where invariants live
+
+There are three places invariants can live. Only two are correct:
+
+| Location | When | Why |
+|---|---|---|
+| Zod schema | Single-field format constraints | `z.string().email()` — structural, not domain |
+| Entity/Aggregate actions | Preconditions for a mutation | "Can't ship an unconfirmed order" |
+| Aggregate `invariants` | Rules that span multiple fields | "Order total must match sum of item prices" |
+
+Zod catches `"notanemail"` → `@sotajs/ddd` catches "can't ship an unconfirmed order".
+
+## Invariants in Aggregate
+
+`invariants` is a **required** field on Aggregate. It runs:
+
+- At `.create()` — before the instance is returned
+- After **every** action — all invariants, not just "relevant" ones
+
+```ts
+const Order = createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  invariants: [
+    (props) => {
+      if (props.items.length === 0)
+        throw new Error('Order must have at least one item');
+    },
+    (props) => {
+      if (props.status === 'confirmed' && props.amountPaid <= 0)
+        throw new Error('Cannot confirm unpaid order');
+    },
+    (props) => {
+      const itemTotal = props.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      if (Math.abs(props.total - itemTotal) > 0.01)
+        throw new Error('Total must match sum of item prices');
+    },
+  ],
+  actions: {
+    confirm(state) {
+      if (state.status !== 'pending') throw new Error('Already processed');
+      state.status = 'confirmed';
+    },
+  },
+});
+```
+
+Every invariant runs after `confirm()` — even the "total must match" invariant,
+which `confirm()` doesn't touch. This is deliberate: invariants don't guess which
+ones are "relevant." They all run, every time.
+
+❌ **Checking invariants in the controller:**
+
+```ts
+// Controller:
+function confirmOrder(id: string) {
+  const order = repo.get(id);
+  if (order.props.amountPaid <= 0) throw new Error('Unpaid'); // ❌ validation leaked
+  order.actions.confirm();
+}
+```
+
+> The rule "can't confirm an unpaid order" belongs to the domain, not to a specific
+> HTTP endpoint. When you put it in the controller, every other caller (CLI command,
+> job queue, event handler) must duplicate the check.
+
+## Invariants in Entity (via actions)
+
+Entity doesn't have an `invariants` field. Instead, invariants live in actions
+as guard clauses:
+
+```ts
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    deactivate(state) {
+      if (!state.emailVerified) throw new Error('Must verify email first');
+      if (state.status === 'inactive') throw new Error('Already inactive');
+      state.status = 'inactive';
+    },
+  },
+});
+```
+
+❌ **Skipping guards and hoping callers do the right thing:**
+
+```ts
+actions: {
+  deactivate(state) {
+    state.status = 'inactive'; // no guard — any caller can deactivate, anytime
+  },
+}
+```
+
+> Without guards, the entity can reach invalid states. `deactivate()` should reject
+> the call if the user isn't verified. Trusting callers is how bugs enter the domain.
+
+## When to use Aggregate vs Entity for invariants
+
+| | Entity | Aggregate |
+|---|---|---|
+| Single-field validation | Zod schema | Zod schema |
+| Action precondition | Guard in action | Guard in action |
+| Cross-field rule (all actions) | Not available | `invariants` array |
+| Cross-field rule (specific action) | Guard in that action | Guard in that action |
+
+Use **Aggregate** when you have rules that must be checked on every mutation
+regardless of which action was called — "total must match sum of items" applies
+after `addItem`, `removeItem`, `applyDiscount`, and everything else.
+
+❌ **Using Aggregate for an entity with no cross-field rules:**
+
+```ts
+createAggregate({
+  name: 'User',
+  schema: UserSchema,
+  invariants: [], // empty — doesn't need Aggregate
+  actions: { ... },
+})
+```
+
+> An empty `invariants` array means you don't have cross-field consistency rules.
+> Use `createEntity` instead. Aggregate's only reason to exist over Entity
+> is the `invariants` guarantee.
+
+## Invariants must be synchronous
+
+No database calls, no HTTP requests, no file I/O:
+
+❌ **Async invariant:**
+
+```ts
+invariants: [
+  async (props) => {
+    const exists = await db.users.count({ where: { email: props.email } });
+    if (exists) throw new Error('Email taken');
+  },
+]
+```
+
+> Uniqueness checks belong in the use case before entity creation, not in invariants.
+> Invariants validate the entity's own state — not the outside world.
+
+## Next
+
+- [Building Aggregates](/docs/guides/aggregates/) — full Aggregate lifecycle
+- [Actions](/docs/guides/actions/) — guard clauses as action preconditions

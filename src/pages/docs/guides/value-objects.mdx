@@ -1,0 +1,146 @@
+---
+title: "Value Objects"
+description: "Structural equality — when identity doesn't matter, only value does"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+A Value Object is defined by its attributes, not by an identity.
+Two value objects with the same fields are equal — there's no `id` to tell them apart.
+
+## Concept
+
+```ts
+// These are the same money amount:
+const a = Money.create({ amount: 100, currency: 'USD' });
+const b = Money.create({ amount: 100, currency: 'USD' });
+a.equals(b); // true — same value
+
+// These are different:
+const c = Money.create({ amount: 100, currency: 'EUR' });
+a.equals(c); // false — different currency
+
+// No id field. Comparison is structural.
+```
+
+Compare to Entity: two User objects with the same id are equal even if props differ.
+Value Object: two Money objects with the same amount and currency are equal — there's no identity.
+
+## Creating a Value Object
+
+```ts
+import { z } from 'zod';
+import { createValueObject } from '@sotajs/ddd';
+
+const MoneySchema = z.object({
+  amount: z.number().positive(),
+  currency: z.enum(['USD', 'EUR', 'RUB']),
+});
+
+const Money = createValueObject({
+  schema: MoneySchema,
+});
+type Money = ReturnType<typeof Money.create>;
+```
+
+Value Objects don't have actions or computed. They're immutable snapshots with structural equality.
+
+❌ **Using a plain object or type alias as a Value Object:**
+
+```ts
+type Money = { amount: number; currency: string };
+
+function charge(amount: Money) {
+  // Is amount validated? Is currency one of the allowed values?
+  // No — it's just a type alias. Zero runtime guarantees.
+}
+```
+
+> `type Money = { ... }` is a TypeScript fiction. At runtime it's just an object.
+> Any `{ amount: -500, currency: 'BTC' }` passes. `createValueObject` with Zod
+> catches invalid values at creation time.
+
+❌ **Giving a Value Object an `id`:**
+
+```ts
+const MoneySchema = z.object({
+  id: z.string(),       // ❌ value objects don't have identity
+  amount: z.number(),
+  currency: z.string(),
+});
+```
+
+> If two Money objects with the same amount and currency are not equal because
+> they have different ids — you made an Entity by accident. Value objects compare
+> by all fields.
+
+## Immutability
+
+Value Objects are immutable. To "change" one, create a new instance:
+
+```ts
+const price = Money.create({ amount: 100, currency: 'USD' });
+
+// There is no price.setAmount(200).
+// Create a new one:
+const discounted = Money.create({ amount: 80, currency: 'USD' });
+```
+
+❌ **Trying to mutate a Value Object:**
+
+```ts
+// No auto-setters on Value Objects. This doesn't exist:
+price.actions.setAmount(80); // ❌ not available
+```
+
+> Value Objects represent concepts that don't change — like money amounts,
+> addresses, coordinates. If the concept has mutable state, it should be an Entity.
+
+## When to use Value Object vs Entity
+
+| | Value Object | Entity |
+|---|---|---|
+| Has identity (`id`) | No | Yes |
+| Equality | Structural (all fields) | By identity (`id`) |
+| Mutable | No (immutable) | Yes (via actions) |
+| Zod schema | `createValueObject` | `createEntity` |
+| Example | Money, Address, Email, Coordinate | User, Order, Product, Tenant |
+
+❌ **Making everything an Entity:**
+
+```ts
+// Address as Entity for no reason:
+const Address = createEntity({
+  schema: z.object({ id: z.string().uuid(), street: z.string(), city: z.string() }),
+  actions: {},
+});
+
+const a = Address.create({ id: 'abc', street: '123 Main', city: 'NYC' });
+const b = Address.create({ id: 'xyz', street: '123 Main', city: 'NYC' });
+a.equals(b); // false — different ids, even though it's the same address
+```
+
+> Two identical addresses should be equal. Adding an `id` breaks that.
+> Use `createValueObject` when the concept has no identity of its own.
+
+## Value Objects as entity fields
+
+Value Objects can be nested in Entity schemas:
+
+```ts
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  address: MoneySchema, // ← Value Object schema as a field
+});
+
+const user = User.create({
+  id: '...', username: 'alice',
+  address: { amount: 100, currency: 'USD' },
+});
+user.props.address; // { amount: 100, currency: 'USD' }
+```
+
+## Next
+
+- [Branded IDs](/docs/guides/branded-ids/) — compile-time safety for entity identifiers
+- [Creating Entities](/docs/guides/creating-entities/) — the full Entity lifecycle
