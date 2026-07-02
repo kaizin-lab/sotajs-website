@@ -1,0 +1,269 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <h2 id="createaggregateconfig"><code>createAggregate(config)</code></h2>
+<p>Creates an <strong>Aggregate</strong> — the transactional consistency boundary in DDD.
+Aggregates enforce invariants on every mutation, hydrate nested entities
+into rich objects, and collect domain events.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createAggregate, createEntity } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderItemSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  productId: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  quantity: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  price: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderItem</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({ schema: OrderItemSchema, actions: {} });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  status: z.</span><span style="color:#B392F0">enum</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">&#39;pending&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;confirmed&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;shipped&#39;</span><span style="color:#E1E4E8">]),</span></span>
+<span class="line"><span style="color:#E1E4E8">  amountPaid: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  items: z.</span><span style="color:#B392F0">array</span><span style="color:#E1E4E8">(OrderItemSchema),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;Order&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: OrderSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  entities: { items: OrderItem },</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (props.status </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#F97583"> &amp;&amp;</span><span style="color:#E1E4E8"> props.amountPaid </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Cannot confirm unpaid order&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  ],</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    confirm</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) { state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">; },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> Order.create&gt;;</span></span></code></pre>
+<blockquote>
+<p><code>invariants</code> is <strong>required</strong>. TypeScript won’t compile without it.
+Invariants run at <code>.create()</code> and after every action. You cannot forget them.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts">Source: aggregate.ts:33-56</a></p>
+</blockquote>
+<hr/>
+<h2 id="config">Config</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td><strong>Yes</strong></td><td>Human-readable name. Used in error messages and debugging.</td></tr><tr><td><code>schema</code></td><td>No*</td><td>Zod/Valibot schema — <code>.parse()</code> interface.</td></tr><tr><td><code>type</code></td><td>No*</td><td>ArkType type — callable, fastest path.</td></tr><tr><td><code>validate</code></td><td>No*</td><td>Generic <code>(data: unknown) =&gt; TProps</code>.</td></tr><tr><td><code>entities</code></td><td>No</td><td>Map of property keys to Entity factories. Nested data is auto-hydrated into entity instances.</td></tr><tr><td><code>invariants</code></td><td><strong>Yes</strong></td><td>Array of <code>(props) =&gt; void</code>. Each must throw on violation. Checked on create and every action.</td></tr><tr><td><code>actions</code></td><td><strong>Yes</strong></td><td>Named operations. Can return <code>{ event }</code> to record a domain event.</td></tr><tr><td><code>computed</code></td><td>No</td><td>Derived getters — same as Entity.</td></tr></tbody></table>
+<blockquote>
+<p>*One of <code>schema</code>, <code>type</code>, or <code>validate</code> is required.</p>
+</blockquote>
+<hr/>
+<h2 id="instance-api">Instance API</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Member</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>Aggregate.create(data)</code></td><td>Aggregate instance</td><td>Validates, hydrates entities, checks invariants.</td></tr><tr><td><code>aggregate.id</code></td><td><code>string</code></td><td>The aggregate root’s identity.</td></tr><tr><td><code>aggregate.props</code></td><td><code>Readonly&lt;TProps&gt;</code></td><td>Frozen, dehydrated snapshot (entities unwrapped to raw data).</td></tr><tr><td><code>aggregate.actions.*</code></td><td><code>(...args) =&gt; any</code></td><td>Action methods. Invariants run after each. Can return <code>{ event }</code>.</td></tr><tr><td><code>aggregate.getPendingEvents()</code></td><td><code>IDomainEvent[]</code></td><td>Collects and clears pending domain events.</td></tr><tr><td><code>aggregate.clearEvents()</code></td><td><code>void</code></td><td>Discards pending events without reading.</td></tr></tbody></table>
+<hr/>
+<h2 id="invariants">Invariants</h2>
+<p>Invariants run <strong>twice</strong>: at <code>.create()</code> and after every action. They are synchronous
+functions that receive the aggregate’s props and throw on violation.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">invariants</span><span style="color:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#E1E4E8">  (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (props.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">      throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Order must have at least one item&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (props.status </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#F97583"> &amp;&amp;</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">props.trackingId)</span></span>
+<span class="line"><span style="color:#F97583">      throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Shipped orders must have a tracking ID&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">],</span></span></code></pre>
+<blockquote>
+<p>All invariants run after <strong>every</strong> action — not just the “relevant” ones.
+Keep them fast: no I/O, no async, no network calls. They are pure validation.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts">Source: aggregate.ts:207-209</a></p>
+</blockquote>
+<hr/>
+<h2 id="nested-entities">Nested Entities</h2>
+<p>When an aggregate contains sub-entities, declare them in <code>entities</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> CustomerInfo</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({ name: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(), email: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">() }),</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    updateName</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">name</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) { state.name </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> name; },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;Order&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: OrderSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  entities: { customerInfo: CustomerInfo },</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">},</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  customerInfo: { name: </span><span style="color:#9ECBFF">&#39;Alice&#39;</span><span style="color:#E1E4E8">, email: </span><span style="color:#9ECBFF">&#39;a@test.com&#39;</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// customerInfo is a real entity instance, not a plain object:</span></span>
+<span class="line"><span style="color:#E1E4E8">order.state.customerInfo.actions.</span><span style="color:#B392F0">updateName</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Alicia&#39;</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<blockquote>
+<p>On creation, <code>CustomerInfo.create(rawData)</code> is called automatically.
+On <code>.props</code> read, entities are dehydrated back to plain objects
+(for clean serialization). On <code>.state</code> read, entities stay hydrated.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts">Source: aggregate.ts:89-104</a></p>
+</blockquote>
+<hr/>
+<h2 id="domain-events">Domain Events</h2>
+<p>Actions can return <code>{ event }</code> to queue a domain event:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (state.status </span><span style="color:#F97583">!==</span><span style="color:#9ECBFF"> &#39;pending&#39;</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Only pending orders can ship&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">},</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// After calling the action:</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">ship</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// events = [{ aggregateId: &#39;...&#39;, timestamp: ... }]</span></span></code></pre>
+<blockquote>
+<p>Events are <strong>pull-based</strong>: actions return events, they accumulate in a queue,
+<strong>you</strong> decide when to dispatch. This keeps the domain layer free of infrastructure
+concerns — no event bus, no message broker, no side effects.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/aggregate.ts">Source: aggregate.ts:201-205</a></p>
+</blockquote>
+<hr/>
+<h2 id="entity-vs-aggregate--when-to-use-which">Entity vs Aggregate — when to use which</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Entity</th><th>Aggregate</th></tr></thead><tbody><tr><td><strong>Identity</strong></td><td>✅ Has <code>id</code></td><td>✅ Has <code>id</code></td></tr><tr><td><strong>Actions</strong></td><td>✅ Mutable through actions</td><td>✅ Mutable through actions</td></tr><tr><td><strong>Invariants</strong></td><td>❌ No invariants field</td><td>✅ Required invariants</td></tr><tr><td><strong>Nested entities</strong></td><td>❌ Plain nested objects</td><td>✅ Auto-hydrated entity instances</td></tr><tr><td><strong>Domain events</strong></td><td>❌ No event support</td><td>✅ Pull-based event queue</td></tr><tr><td><strong>Auto-setters</strong></td><td>✅ From schema.shape</td><td>❌ Not generated</td></tr></tbody></table>
+<p>Use <strong>Entity</strong> when you need identity + behavior without cross-field consistency rules.
+Use <strong>Aggregate</strong> when you need invariants that must be checked on every mutation —
+or when you compose multiple entities into a transactional boundary.</p>
+<blockquote>
+<p>This distinction follows Evans: an Aggregate is a cluster of objects treated as
+a unit for data changes. The Aggregate Root is the only access point.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/issues/6">See: Architecture direction (issue #6)</a></p>
+</blockquote>
+<hr/>
+<h2 id="pitfalls">Pitfalls</h2>
+<ul>
+<li><strong>Invariants run on every action — all of them.</strong> Keep the list short and fast.</li>
+<li><strong><code>getPendingEvents()</code> clears the queue.</strong> Call it once per use case. If you need to read without clearing, access the internal queue directly (not recommended).</li>
+<li><strong>Shallow copies during actions.</strong> Same as Entity. Nested structures share references with the draft.</li>
+<li><strong>Props are dehydrated</strong> — nested entities are unwrapped to raw data on <code>.props</code>. Use <code>.state</code> if you need entity instances.</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

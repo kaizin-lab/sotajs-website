@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <h2 id="createvalueobjectconfig"><code>createValueObject(config)</code></h2>
+<p>Creates a <strong>Value Object</strong> — an object defined by its attributes, not by identity.
+Two Value Objects with identical props are equal. Props are frozen — immutable from the outside.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createValueObject } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MoneySchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  amount: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  currency: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">length</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">3</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> MoneyProps</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> z</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">infer</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> MoneySchema&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Money</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createValueObject</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: MoneySchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    add</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">other</span><span style="color:#F97583">:</span><span style="color:#B392F0"> MoneyProps</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.currency </span><span style="color:#F97583">!==</span><span style="color:#E1E4E8"> other.currency)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Currency mismatch&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.amount </span><span style="color:#F97583">+=</span><span style="color:#E1E4E8"> other.amount;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  computed: {</span></span>
+<span class="line"><span style="color:#B392F0">    formatted</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#9ECBFF"> `${</span><span style="color:#E1E4E8">state</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">amount</span><span style="color:#9ECBFF">} ${</span><span style="color:#E1E4E8">state</span><span style="color:#9ECBFF">.</span><span style="color:#E1E4E8">currency</span><span style="color:#9ECBFF">}`</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> Money</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> Money.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b); </span><span style="color:#6A737D">// true — same attributes</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">a.actions.</span><span style="color:#B392F0">add</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">50</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">a.formatted; </span><span style="color:#6A737D">// &#39;150 USD&#39;</span></span></code></pre>
+<blockquote>
+<p><code>equals()</code> uses <code>JSON.stringify</code> comparison — structural, not referential.
+Two instances created at different times with the same data are equal.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/value-object.ts">Source: value-object.ts:101-103</a></p>
+</blockquote>
+<hr/>
+<h2 id="config">Config</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>No*</td><td>Zod/Valibot schema.</td></tr><tr><td><code>type</code></td><td>No*</td><td>ArkType type.</td></tr><tr><td><code>validate</code></td><td>No*</td><td>Generic validate function.</td></tr><tr><td><code>actions</code></td><td>No</td><td>Optional. Domain actions that mutate a draft copy of state.</td></tr><tr><td><code>computed</code></td><td>No</td><td>Derived getters.</td></tr></tbody></table>
+<blockquote>
+<p>*One of <code>schema</code>, <code>type</code>, or <code>validate</code> is required.</p>
+</blockquote>
+<hr/>
+<h2 id="instance-api">Instance API</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Member</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>VO.create(data)</code></td><td>ValueObject instance</td><td>Validates and creates.</td></tr><tr><td><code>vo.props</code></td><td><code>Readonly&lt;TProps&gt;</code></td><td>Frozen snapshot of current state.</td></tr><tr><td><code>vo.actions.*</code></td><td><code>(...args) =&gt; void</code></td><td>Action methods (if configured).</td></tr><tr><td><code>vo.equals(other)</code></td><td><code>boolean</code></td><td>Structural equality via JSON comparison.</td></tr></tbody></table>
+<hr/>
+<h2 id="structural-equality">Structural equality</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> a</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> b</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> c</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Money.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ amount: </span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">, currency: </span><span style="color:#9ECBFF">&#39;USD&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(b); </span><span style="color:#6A737D">// true</span></span>
+<span class="line"><span style="color:#E1E4E8">a.</span><span style="color:#B392F0">equals</span><span style="color:#E1E4E8">(c); </span><span style="color:#6A737D">// false</span></span></code></pre>
+<blockquote>
+<p>Equality uses <code>JSON.stringify</code>. This means property order matters,
+<code>undefined</code> values are stripped, and <code>Date</code>/<code>BigInt</code> objects may
+behave unexpectedly. For most Value Objects this is sufficient.
+If you need custom equality, implement it outside the VO.</p>
+</blockquote>
+<hr/>
+<h2 id="actions-are-optional">Actions are optional</h2>
+<p>A Value Object without actions is perfectly valid:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Point</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createValueObject</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({ x: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(), y: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">() }),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> p</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Point.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ x: </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, y: </span><span style="color:#79B8FF">2</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#6A737D">// p.actions is an empty object — no mutation surface</span></span></code></pre>
+<hr/>
+<h2 id="value-object-vs-entity">Value Object vs Entity</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Entity</th><th>Value Object</th></tr></thead><tbody><tr><td><strong>Identity</strong></td><td>Has <code>id</code> — equality by identity</td><td>No <code>id</code> — equality by attributes</td></tr><tr><td><strong>Mutability</strong></td><td>Mutable through actions</td><td>Mutable through optional actions</td></tr><tr><td><strong>Use case</strong></td><td>”A specific user&quot;</td><td>&quot;An amount of money”</td></tr><tr><td><strong><code>equals()</code></strong></td><td>Compares <code>id</code></td><td>Compares all attributes</td></tr></tbody></table>
+<hr/>
+<h2 id="pitfalls">Pitfalls</h2>
+<ul>
+<li><strong>Equality is JSON-based.</strong> Dates become strings, BigInt breaks, property order matters.</li>
+<li><strong>No nominal distinction.</strong> Two Value Objects with identical shapes are TypeScript-compatible. Use branded types if you need <code>Email ≠ Username</code> at compile time.</li>
+<li><strong>Props are frozen.</strong> To “change” a VO, use an action (which mutates a draft copy internally).</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

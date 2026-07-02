@@ -1,0 +1,179 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <p>These are patterns we’ve seen (and written ourselves). Each one looks reasonable
+at first glance but undermines what the library gives you.</p>
+<hr/>
+<h2 id="trivial-actions--wrapping-auto-setters">Trivial actions — wrapping auto-setters</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  updateBio</span><span style="color:#E1E4E8">(state, bio: string) { state.bio </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> bio; },</span></span>
+<span class="line"><span style="color:#B392F0">  setName</span><span style="color:#E1E4E8">(state, name: string) { state.name </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> name; },</span></span>
+<span class="line"><span style="color:#B392F0">  setEmail</span><span style="color:#E1E4E8">(state, email: string) { state.email </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> email; },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Don&#39;t write these. Auto-setters already exist:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setBio</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;new bio&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setName</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setEmail</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;a@test.com&#39;</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<blockquote>
+<p>Every Zod field gets a typed <code>setField()</code> auto-generated.
+Only write actions for operations with business logic.</p>
+</blockquote>
+<hr/>
+<h2 id="zod-inside-the-validate-callback">Zod inside the validate callback</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#B392F0">  validate</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">data</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span></span>
+<span class="line"><span style="color:#E1E4E8">    z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">      id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">      name: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">    }).</span><span style="color:#B392F0">parse</span><span style="color:#E1E4E8">(data),</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> schema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema,  </span><span style="color:#6A737D">// ← direct, shorter, gives auto-setters</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<blockquote>
+<p>Using <code>schema</code> directly gives you type inference AND auto-setters from <code>schema.shape</code>.
+Using <code>validate</code> wrapper loses auto-setters and type inference from the schema.</p>
+</blockquote>
+<hr/>
+<h2 id="skipping-invariants-on-aggregate">Skipping invariants on Aggregate</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;Order&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: OrderSchema,</span></span>
+<span class="line"><span style="color:#6A737D">  // invariants: [] ← empty or missing</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: { </span><span style="color:#F97583">...</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>This won’t compile — <code>invariants</code> is required. But the temptation is to write:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">invariants</span><span style="color:#E1E4E8">: [], </span><span style="color:#6A737D">// empty array — compiles but gives no protection</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">invariants</span><span style="color:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#E1E4E8">  (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (props.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">      throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Must have at least one item&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">],</span></span></code></pre>
+<blockquote>
+<p>If you have no invariants, you don’t need an Aggregate. Use <code>createEntity</code> instead.
+An empty <code>invariants</code> array is a code smell — it means “I wanted Aggregate features
+without Aggregate responsibility.”</p>
+</blockquote>
+<hr/>
+<h2 id="business-logic-in-the-repository">Business logic in the repository</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">async</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> createOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">data</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(data);</span></span>
+<span class="line"><span style="color:#6A737D">  // Business logic in the repository:</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (order.props.total </span><span style="color:#F97583">&gt;</span><span style="color:#79B8FF"> 10000</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#E1E4E8"> notificationService.</span><span style="color:#B392F0">sendLargeOrderAlert</span><span style="color:#E1E4E8">(order);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#F97583">  await</span><span style="color:#E1E4E8"> db.orders.</span><span style="color:#B392F0">save</span><span style="color:#E1E4E8">(order.props);</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Repository: persistence only</span></span>
+<span class="line"><span style="color:#F97583">async</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> saveOrder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">order</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Order</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  await</span><span style="color:#E1E4E8"> db.orders.</span><span style="color:#B392F0">upsert</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">    where: { id: order.id },</span></span>
+<span class="line"><span style="color:#E1E4E8">    create: order.props,</span></span>
+<span class="line"><span style="color:#E1E4E8">    update: order.props,</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Use case: business logic</span></span>
+<span class="line"><span style="color:#F97583">async</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> createOrderCommand</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">data</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(data);</span></span>
+<span class="line"><span style="color:#F97583">  await</span><span style="color:#B392F0"> saveOrder</span><span style="color:#E1E4E8">(order);</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (order.props.total </span><span style="color:#F97583">&gt;</span><span style="color:#79B8FF"> 10000</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#E1E4E8"> notificationService.</span><span style="color:#B392F0">sendLargeOrderAlert</span><span style="color:#E1E4E8">(order);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<blockquote>
+<p>Repository = persistence. Use case = orchestration + business logic.
+Keeping them separate makes both testable in isolation.</p>
+</blockquote>
+<hr/>
+<h2 id="state-objects-instead-of-entities">State objects instead of entities</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Anemic: state is a plain object, logic lives elsewhere</span></span>
+<span class="line"><span style="color:#F97583">interface</span><span style="color:#B392F0"> OrderState</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#FFAB70">  items</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderItem</span><span style="color:#E1E4E8">[];</span></span>
+<span class="line"><span style="color:#FFAB70">  status</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Logic scattered across services:</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> OrderService</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">  addItem</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">order</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderState</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">item</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderItem</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (order.status </span><span style="color:#F97583">!==</span><span style="color:#9ECBFF"> &#39;pending&#39;</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> ...</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    order.items.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(item);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">order</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OrderState</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (order.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> ...</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    order.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Rich: state and behavior in one place</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#6A737D">  // ... schema, invariants, actions</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Use case: just orchestration</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">addItem</span><span style="color:#E1E4E8">(item);</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">ship</span><span style="color:#E1E4E8">();</span></span></code></pre>
+<blockquote>
+<p>The library doesn’t add new concepts — it removes the friction of doing it right.
+An anemic model is cheaper in the moment. The library makes rich models cheaper.</p>
+</blockquote>
+<hr/>
+<h2 id="ignoring-domain-events">Ignoring domain events</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#6A737D">    // No event returned — consumer doesn&#39;t know this happened</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  ship</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// After the use case:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// Dispatch to email service, analytics, audit log, etc.</span></span></code></pre>
+<blockquote>
+<p>Events are pull-based. If you don’t return them, they don’t exist.
+If you don’t pull them, nothing happens. It’s explicit and testable.</p>
+</blockquote>
+<hr/>
+<h2 id="validating-what-zod-already-validates">Validating what Zod already validates</h2>
+<p>❌ <strong>Bad:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> schema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({ email: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">actions</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">  setEmail</span><span style="color:#E1E4E8">(state, email: string) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">email.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;@&#39;</span><span style="color:#E1E4E8">)) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Invalid email&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    state.email </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> email;</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>✅ <strong>Good:</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> schema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({ email: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">() });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Zod validates on .create(). Auto-setter handles assignment:</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setEmail</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;a@test.com&#39;</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<blockquote>
+<p>Zod validation runs on <code>.create()</code>. Auto-setters bypass schema re-validation.
+If you need re-validation on every set (e.g., you changed the schema after creation),
+write an action that calls <code>schema.parse()</code> — but that’s rare.</p>
+</blockquote> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <p>An Aggregate is a cluster of entities treated as a single unit for data changes.
+It’s the <strong>transactional consistency boundary</strong> — invariants run on every mutation.</p>
+<h2 id="1-start-with-entities">1. Start with entities</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderItemSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  productId: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  quantity: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  price: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">positive</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderItem</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({ schema: OrderItemSchema, actions: {} });</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> OrderItem</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> OrderItem.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> CustomerInfoSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  email: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">email</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> CustomerInfo</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: CustomerInfoSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    updateName</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">name</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">) { state.name </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> name; }, </span><span style="color:#6A737D">// trivial — use auto-setter</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<blockquote>
+<p>❌ The <code>updateName</code> action above is a trivial setter. In a real project, use auto-setters.
+See <a href="/docs/guides/actions-vs-setters/">Actions vs Auto-setters</a>.</p>
+</blockquote>
+<h2 id="2-define-the-aggregate">2. Define the aggregate</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createAggregate } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> OrderSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  status: z.</span><span style="color:#B392F0">enum</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">&#39;pending&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;confirmed&#39;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&#39;shipped&#39;</span><span style="color:#E1E4E8">]),</span></span>
+<span class="line"><span style="color:#E1E4E8">  amountPaid: z.</span><span style="color:#B392F0">number</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  items: z.</span><span style="color:#B392F0">array</span><span style="color:#E1E4E8">(OrderItemSchema),</span></span>
+<span class="line"><span style="color:#E1E4E8">  customerInfo: CustomerInfoSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createAggregate</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  name: </span><span style="color:#9ECBFF">&#39;Order&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: OrderSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  entities: {</span></span>
+<span class="line"><span style="color:#E1E4E8">    items: OrderItem,         </span><span style="color:#6A737D">// auto-hydrated into entity instances</span></span>
+<span class="line"><span style="color:#E1E4E8">    customerInfo: CustomerInfo,</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  invariants: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (props.items.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Order must have at least one item&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (props.status </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#F97583"> &amp;&amp;</span><span style="color:#E1E4E8"> props.amountPaid </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Cannot confirm unpaid order&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  ],</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    confirm</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) { state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">; },</span></span>
+<span class="line"><span style="color:#B392F0">    ship</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.status </span><span style="color:#F97583">!==</span><span style="color:#9ECBFF"> &#39;confirmed&#39;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Only confirmed orders can be shipped&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;shipped&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#E1E4E8"> { event: { aggregateId: state.id, timestamp: </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">() } };</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> Order</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> Order.create&gt;;</span></span></code></pre>
+<h2 id="3-invariants--required-not-optional">3. Invariants — required, not optional</h2>
+<p><code>invariants</code> is a <strong>required</strong> field. TypeScript won’t compile without it.
+Invariants run:</p>
+<ul>
+<li>At <code>.create()</code> — before the instance is returned</li>
+<li>After <strong>every</strong> action — all invariants, not just “relevant” ones</li>
+</ul>
+<blockquote>
+<p>Keep them fast. No I/O, no async, no database calls. Pure synchronous validation.</p>
+</blockquote>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Invariant caught at creation:</span></span>
+<span class="line"><span style="color:#E1E4E8">Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, status: </span><span style="color:#9ECBFF">&#39;confirmed&#39;</span><span style="color:#E1E4E8">, amountPaid: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, items: [] });</span></span>
+<span class="line"><span style="color:#6A737D">// Error: Order must have at least one item</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Invariant caught after action:</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, status: </span><span style="color:#9ECBFF">&#39;pending&#39;</span><span style="color:#E1E4E8">, amountPaid: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  items: [{ productId: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, quantity: </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, price: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8"> }],</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">confirm</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// Error: Cannot confirm unpaid order</span></span></code></pre>
+<h2 id="4-nested-entities--rich-model-inside">4. Nested entities — rich model inside</h2>
+<p>Entities declared in <code>entities</code> are auto-hydrated:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> order</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Order.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  status: </span><span style="color:#9ECBFF">&#39;pending&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  amountPaid: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  items: [{ productId: </span><span style="color:#9ECBFF">&#39;...&#39;</span><span style="color:#E1E4E8">, quantity: </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, price: </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8"> }],</span></span>
+<span class="line"><span style="color:#E1E4E8">  customerInfo: { name: </span><span style="color:#9ECBFF">&#39;Alice&#39;</span><span style="color:#E1E4E8">, email: </span><span style="color:#9ECBFF">&#39;a@test.com&#39;</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// customerInfo is a real entity — not a plain object:</span></span>
+<span class="line"><span style="color:#E1E4E8">order.state.customerInfo.actions.</span><span style="color:#B392F0">updateName</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Alicia&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// (use setter instead)</span></span>
+<span class="line"><span style="color:#E1E4E8">order.state.customerInfo.props.name; </span><span style="color:#6A737D">// &#39;Alicia&#39;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// items are entity instances:</span></span>
+<span class="line"><span style="color:#E1E4E8">order.state.items[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">].props.quantity; </span><span style="color:#6A737D">// 1</span></span></code></pre>
+<blockquote>
+<p>On <code>.props</code> read, entities are dehydrated back to plain objects — ready for serialization.
+Use <code>.state</code> (deprecated but available) if you need hydrated entity instances.</p>
+</blockquote>
+<h2 id="5-domain-events--pull-not-push">5. Domain events — pull, not push</h2>
+<p>Actions can return <code>{ event }</code>. Events accumulate in a queue.
+<strong>You</strong> decide when to dispatch them:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">order.actions.</span><span style="color:#B392F0">ship</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> order.</span><span style="color:#B392F0">getPendingEvents</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#6A737D">// [{ aggregateId: &#39;...&#39;, timestamp: ... }]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Now dispatch them — your event bus, your rules:</span></span>
+<span class="line"><span style="color:#6A737D">// eventBus.publish(events);</span></span></code></pre>
+<blockquote>
+<p>Events are pull-based by design. The domain layer produces events;
+the application layer dispatches them. No hidden side effects.</p>
+</blockquote>
+<h2 id="6-entity-vs-aggregate">6. Entity vs Aggregate</h2>
+<p>Use <strong>Entity</strong> for identity + behavior without cross-field consistency rules.
+Use <strong>Aggregate</strong> when invariants must be checked on every mutation.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Entity</th><th>Aggregate</th></tr></thead><tbody><tr><td><code>invariants</code></td><td>❌ Not available</td><td>✅ Required</td></tr><tr><td>Nested entities</td><td>Plain objects</td><td>Auto-hydrated instances</td></tr><tr><td>Domain events</td><td>❌</td><td>✅ Pull-based queue</td></tr><tr><td>Auto-setters</td><td>✅</td><td>❌</td></tr></tbody></table>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="/docs/api/entity/">Entity API</a></li>
+<li><a href="/docs/api/aggregate/">Aggregate API</a></li>
+<li><a href="/docs/guides/anti-patterns/">Anti-patterns</a></li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

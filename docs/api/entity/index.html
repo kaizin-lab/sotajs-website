@@ -1,0 +1,179 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <h2 id="createentityconfig"><code>createEntity(config)</code></h2>
+<p>Creates an <strong>Entity</strong> — an object with a unique identity (<code>id</code>), mutable state changed only through
+defined actions, and computed (derived) properties.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createEntity } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserSchema</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  username: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  bio: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">optional</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">  emailVerified: z.</span><span style="color:#B392F0">boolean</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">default</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createEntity</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: UserSchema,</span></span>
+<span class="line"><span style="color:#E1E4E8">  actions: {</span></span>
+<span class="line"><span style="color:#B392F0">    verifyEmail</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Already verified&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  computed: {</span></span>
+<span class="line"><span style="color:#B392F0">    displayName</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">props</span><span style="color:#E1E4E8">) { </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> props.username; },</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> User</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> User.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> user</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> User.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;b3f1ae2c-abcd&#39;</span><span style="color:#E1E4E8">, username: </span><span style="color:#9ECBFF">&#39;alice&#39;</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">verifyEmail</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(user.displayName); </span><span style="color:#6A737D">// &#39;alice&#39;</span></span></code></pre>
+<blockquote>
+<p><strong>How does <code>displayName</code> work?</strong> It’s a getter defined on the entity prototype.
+Each computed key becomes a property — not a function call. Defined once
+in config, reads like native data. Recalculates from current props on every access.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts">Source: entity.ts</a></p>
+</blockquote>
+<hr/>
+<h2 id="config">Config</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>No*</td><td>Zod/Valibot schema — <code>.parse()</code> interface. Provides type inference + auto-setters.</td></tr><tr><td><code>type</code></td><td>No*</td><td>ArkType type — callable. Fastest validation path.</td></tr><tr><td><code>validate</code></td><td>No*</td><td>Generic <code>(data: unknown) =&gt; TProps</code>. Use with any validator or plain function.</td></tr><tr><td><code>actions</code></td><td><strong>Yes</strong></td><td>Named operations that mutate state. First argument is a mutable draft.</td></tr><tr><td><code>computed</code></td><td>No</td><td>Derived getters. Each key becomes a property on the entity instance.</td></tr></tbody></table>
+<blockquote>
+<p>*One of <code>schema</code>, <code>type</code>, or <code>validate</code> is required. Pick the one that matches your validator.</p>
+</blockquote>
+<hr/>
+<h2 id="instance-api">Instance API</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Member</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>Entity.create(data)</code></td><td>Entity instance</td><td>Static factory. Validates input through schema/type/validate, returns entity.</td></tr><tr><td><code>entity.id</code></td><td><code>string</code></td><td>The entity’s identity.</td></tr><tr><td><code>entity.props</code></td><td><code>Readonly&lt;TProps&gt;</code></td><td>Frozen snapshot of current state.</td></tr><tr><td><code>entity.actions.*</code></td><td><code>(...args) =&gt; void</code></td><td>Action methods. Each mutates state through a shallow copy.</td></tr><tr><td><code>entity.equals(other)</code></td><td><code>boolean</code></td><td>Identity comparison by <code>id</code>.</td></tr></tbody></table>
+<hr/>
+<h2 id="how-state-mutation-works">How state mutation works</h2>
+<p>When you call an action, the library:</p>
+<ol>
+<li>Reads current state from an internal <code>WeakMap</code></li>
+<li>Creates a <strong>shallow copy</strong> (<code>{ ...current }</code>)</li>
+<li>Passes the copy to your action function — you mutate it freely</li>
+<li>Checks invariants (only on Aggregate)</li>
+<li>Writes the copy back to the <code>WeakMap</code></li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Your action</span></span>
+<span class="line"><span style="color:#B392F0">verifyEmail</span><span style="color:#E1E4E8">(state) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (state.emailVerified) </span><span style="color:#F97583">throw</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;Already verified&#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  state.emailVerified </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// mutating a draft copy</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#6A737D">// The library swaps the draft in — atomic from your perspective</span></span></code></pre>
+<blockquote>
+<p>State never lives on <code>this</code>. It’s stored in a <code>WeakMap</code> keyed by the entity instance.
+No public fields, no accidental exposure through iteration or logging.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts">Source: entity.ts:152-217</a></p>
+</blockquote>
+<hr/>
+<h2 id="why-cant-i-mutate-props-directly">Why can’t I mutate <code>props</code> directly?</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">user.props.bio </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &#39;x&#39;</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// TypeError: Cannot assign to read only property</span></span></code></pre>
+<blockquote>
+<p><code>props</code> returns <code>deepFreeze({ ...current })</code> — a recursively frozen copy.
+Every read creates a new snapshot. The original state is untouched.
+This is not a convention — it’s a physical constraint of the runtime.
+<a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts">Source: entity.ts:112-115</a></p>
+</blockquote>
+<hr/>
+<h2 id="auto-setters">Auto-setters</h2>
+<p>For every non-<code>id</code> field in your schema, the library generates a <code>setField(value)</code> method:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Schema: { id, username, bio }</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setUsername</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;new-name&#39;</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// generated automatically</span></span>
+<span class="line"><span style="color:#E1E4E8">user.actions.</span><span style="color:#B392F0">setBio</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;new-bio&#39;</span><span style="color:#E1E4E8">);       </span><span style="color:#6A737D">// generated automatically</span></span></code></pre>
+<blockquote>
+<p>How? The library introspects <code>schema.shape</code> at definition time.
+Every key except <code>id</code> gets a setter. For ArkType or <code>validate</code> callbacks,
+auto-setters are discovered by calling <code>validate({ id: &quot;any&quot; })</code> and
+inspecting the returned keys. <a href="https://github.com/kaizin-lab/sotajs-ddd/blob/main/src/entity.ts">Source: entity.ts:83-124</a></p>
+</blockquote>
+<hr/>
+<h2 id="validator-agnostic">Validator-agnostic</h2>
+<p>Three equivalent ways to define the same entity:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#6A737D">// Zod / Valibot</span></span>
+<span class="line"><span style="color:#B392F0">createEntity</span><span style="color:#E1E4E8">({ schema: z.</span><span style="color:#B392F0">object</span><span style="color:#E1E4E8">({ id: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">(), name: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">() }), actions: {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">} })</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// ArkType</span></span>
+<span class="line"><span style="color:#B392F0">createEntity</span><span style="color:#E1E4E8">({ type: </span><span style="color:#B392F0">type</span><span style="color:#E1E4E8">({ id: </span><span style="color:#9ECBFF">&#39;string&#39;</span><span style="color:#E1E4E8">, name: </span><span style="color:#9ECBFF">&#39;string&#39;</span><span style="color:#E1E4E8"> }), actions: {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">} })</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Plain function</span></span>
+<span class="line"><span style="color:#B392F0">createEntity</span><span style="color:#E1E4E8">({ </span><span style="color:#B392F0">validate</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">data</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> data </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">; </span><span style="color:#FFAB70">name</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8"> }, actions: {</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">} })</span></span></code></pre>
+<blockquote>
+<p>The library only cares that your validator has a <code>.parse()</code> method (schema),
+is callable (type), or is a function (validate). Everything else is your choice.</p>
+</blockquote>
+<hr/>
+<h2 id="pitfalls">Pitfalls</h2>
+<ul>
+<li><strong>Computed values are not cached.</strong> They recalculate on every access. Keep them fast.</li>
+<li><strong>State is shallow-copied during actions.</strong> If your state has nested objects, the draft shares references with the original for unchanged properties. <code>deepFreeze</code> on <code>.props</code> prevents external mutation.</li>
+<li><strong>Auto-setters skip when <code>validate({ id: &quot;any&quot; })</code> throws.</strong> Define explicit setters in <code>actions</code> for strict validators.</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

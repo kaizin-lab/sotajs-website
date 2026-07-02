@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>sotajs/ddd — sotajs/ddd</title><meta name="description" content="Tactical DDD for Node.js / TypeScript — four functions, zero lock-in."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css">
+<style>h1[data-astro-cid-j7pv25f6]{font-size:2.8rem;font-weight:700;line-height:1.08;letter-spacing:-.03em;margin-bottom:16px}h2[data-astro-cid-j7pv25f6]{font-size:1.45rem;font-weight:600;margin-bottom:12px}.sub[data-astro-cid-j7pv25f6]{color:var(--color-text-secondary);font-size:1.05rem;line-height:1.65;max-width:600px}.label[data-astro-cid-j7pv25f6]{font-family:var(--font-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--color-text-muted);margin-bottom:12px}.row[data-astro-cid-j7pv25f6]{display:flex;gap:48px;align-items:flex-start}.col[data-astro-cid-j7pv25f6]{flex:1;min-width:0}.chrome[data-astro-cid-j7pv25f6]{border:1px solid var(--color-border-default);border-radius:8px;overflow:hidden;background:var(--color-bg-code)}.chrome-bar[data-astro-cid-j7pv25f6]{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--color-border-muted);background:var(--color-bg-surface)}.chrome-dot[data-astro-cid-j7pv25f6]{width:12px;height:12px;border-radius:50%}.chrome-dot[data-astro-cid-j7pv25f6].r{background:var(--color-red);opacity:.6}.chrome-dot[data-astro-cid-j7pv25f6].y{background:var(--color-amber);opacity:.6}.chrome-dot[data-astro-cid-j7pv25f6].g{background:var(--color-green);opacity:.6}.chrome-fname[data-astro-cid-j7pv25f6]{margin-left:8px;font-size:.75rem;color:var(--color-text-muted);font-family:var(--font-mono)}.chrome[data-astro-cid-j7pv25f6] pre[data-astro-cid-j7pv25f6]{border:none;border-radius:0;margin:0}.gap-header[data-astro-cid-j7pv25f6]{display:flex;align-items:baseline;gap:16px;margin-bottom:16px}.gap-num[data-astro-cid-j7pv25f6]{font-family:var(--font-mono);font-size:.8rem;color:var(--color-accent);min-width:28px}.gap-problem[data-astro-cid-j7pv25f6]{font-family:var(--font-mono);font-size:.72rem;color:var(--color-red);background:#f8514914;padding:2px 8px;border-radius:3px;margin-bottom:12px;display:inline-block}.contrast[data-astro-cid-j7pv25f6]{display:grid;grid-template-columns:1fr 1fr;gap:24px}.contrast-col[data-astro-cid-j7pv25f6]{position:relative}.contrast-label[data-astro-cid-j7pv25f6]{position:absolute;top:-28px;right:0;font-family:var(--font-mono);font-size:.65rem;padding:2px 8px;border-radius:3px}.contrast-label[data-astro-cid-j7pv25f6].bad{background:#f8514926;color:var(--color-red)}.contrast-label[data-astro-cid-j7pv25f6].good{background:#22d3ee1f;color:var(--color-accent)}.result[data-astro-cid-j7pv25f6]{display:flex;gap:32px;margin-top:24px}.result-item[data-astro-cid-j7pv25f6]{flex:1;background:var(--color-bg-surface);border:1px solid var(--color-border-muted);border-radius:6px;padding:16px}.result-item[data-astro-cid-j7pv25f6] h4[data-astro-cid-j7pv25f6]{font-size:.88rem;font-weight:600;margin-bottom:6px}.result-item[data-astro-cid-j7pv25f6] p[data-astro-cid-j7pv25f6]{color:var(--color-text-secondary);font-size:.82rem;line-height:1.5}.cta-block[data-astro-cid-j7pv25f6]{text-align:center;padding:100px 0 80px}.cta-block[data-astro-cid-j7pv25f6] pre[data-astro-cid-j7pv25f6]{display:inline-block;text-align:left;margin-bottom:16px}.small-label[data-astro-cid-j7pv25f6]{font-size:.7rem;color:var(--color-text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}@media(max-width:768px){h1[data-astro-cid-j7pv25f6]{font-size:1.7rem}.row[data-astro-cid-j7pv25f6],.result[data-astro-cid-j7pv25f6]{flex-direction:column;gap:24px}.contrast[data-astro-cid-j7pv25f6]{grid-template-columns:1fr}}
+</style></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">    <section class="max-w-[960px] mx-auto px-6 pt-24 pb-16 sm:pt-32 sm:pb-18" data-astro-cid-j7pv25f6> <p class="label" data-astro-cid-j7pv25f6>@sotajs/ddd</p> <h1 data-astro-cid-j7pv25f6>Tactical DDD was designed for<br data-astro-cid-j7pv25f6>a runtime <span style="color: var(--color-accent);" data-astro-cid-j7pv25f6>Node doesn't provide</span></h1> <p class="sub" data-astro-cid-j7pv25f6>
+Nominal typing, real encapsulation, rich domain models — DDD patterns assume a Java/C# runtime.
+    In Node you pay for every invariant with manual infrastructure. Most teams cut corners,
+    keeping the vocabulary and losing the guarantees.
+</p> <p class="sub" style="margin-top: 12px; color: var(--color-accent); font-weight: 500;" data-astro-cid-j7pv25f6>
+Four functions. Zero lock-in. DDD without the infrastructure tax.
+</p> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <div class="gap-header" data-astro-cid-j7pv25f6> <span class="gap-num" data-astro-cid-j7pv25f6>01</span> <h2 data-astro-cid-j7pv25f6>Structural typing: <span style="font-weight: 400;" data-astro-cid-j7pv25f6>two strings, same type</span></h2> </div> <span class="gap-problem" data-astro-cid-j7pv25f6>TS lets you pass a UserId where a ProductId is expected</span> <div class="row" style="margin-top: 20px;" data-astro-cid-j7pv25f6> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>without library</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>type UserId = string;
+type ProductId = string;
+
+function assignToUser(id: UserId) { ... }
+function getProduct(id: ProductId) { ... }
+
+assignToUser(productId); // compiles. runtime bug.
+getProduct(userId);      // compiles. another bug.</code></pre> </div> </div> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>with @sotajs/ddd</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>import { createBrandedId } from &#39;@sotajs/ddd&#39;;
+
+const UserId = createBrandedId({
+  brand: &#39;UserId&#39;,
+  schema: z.string().uuid(),
+});
+type UserId = ReturnType&lt;typeof UserId.create&gt;;
+
+const ProductId = createBrandedId({
+  brand: &#39;ProductId&#39;,
+  schema: z.string().uuid(),
+});
+type ProductId = ReturnType&lt;typeof ProductId.create&gt;;
+
+function assignToUser(id: UserId) {}
+function getProduct(id: ProductId) {}
+
+assignToUser(productIdInstance); // TypeScript error
+getProduct(userIdInstance);      // TypeScript error</code></pre> </div> </div> </div> <div class="result" data-astro-cid-j7pv25f6> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Compile-time safety</h4> <p data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>UserId</code> and <code data-astro-cid-j7pv25f6>ProductId</code> are distinct types. The compiler catches swaps before they reach production.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Validation on creation</h4> <p data-astro-cid-j7pv25f6>Schema validates the raw string on <code data-astro-cid-j7pv25f6>.create()</code>. UUID format enforced, no silent garbage.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>JSON-safe</h4> <p data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>.toJSON()</code> and <code data-astro-cid-j7pv25f6>.toString()</code> built in. Serializes to plain string, deserializes through <code data-astro-cid-j7pv25f6>.create()</code>.</p> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <div class="gap-header" data-astro-cid-j7pv25f6> <span class="gap-num" data-astro-cid-j7pv25f6>02</span> <h2 data-astro-cid-j7pv25f6>Encapsulation: <span style="font-weight: 400;" data-astro-cid-j7pv25f6>no true privacy in JS</span></h2> </div> <span class="gap-problem" data-astro-cid-j7pv25f6>Private fields exist but serialization strips them. ORMs write past every guard.</span> <div class="row" style="margin-top: 20px;" data-astro-cid-j7pv25f6> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" style="margin-bottom: 16px;" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>without library</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>class User {
+  constructor(public bio: string) {}
+}
+const user = new User(&#39;hello&#39;);
+
+user.bio = &#39;anything&#39;; // direct mutation
+
+// ORM saves it. Invariant check? Skipped.
+// JSON.stringify(user) — full access.
+// Six months later: who changed this?</code></pre> </div> </div> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" style="margin-bottom: 16px;" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>with @sotajs/ddd</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    updateBio(state, bio) {
+      state.bio = bio;
+    },
+  },
+});
+
+user.actions.updateBio(&#39;new bio&#39;);  // ✓
+user.props.bio = &#39;x&#39;; // TypeError: frozen
+// Every mutation goes through
+// a named, typed action — one path,
+// grepable, auditable.</code></pre> </div> </div> </div> <div class="result" data-astro-cid-j7pv25f6> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>WeakMap state storage</h4> <p data-astro-cid-j7pv25f6>State lives outside <code data-astro-cid-j7pv25f6>this</code>. No public fields. No accidental exposure through iteration or logging.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>deepFreeze on every read</h4> <p data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>.props</code> returns a frozen snapshot. Mutation throws TypeError. Not a convention — a physical constraint.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Actions — single path</h4> <p data-astro-cid-j7pv25f6>Every state change has a name, a typed signature, and a single location. Grep <code data-astro-cid-j7pv25f6>actions.updateBio</code> → you found every call site.</p> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <div class="gap-header" data-astro-cid-j7pv25f6> <span class="gap-num" data-astro-cid-j7pv25f6>03</span> <h2 data-astro-cid-j7pv25f6>The cost gap: <span style="font-weight: 400;" data-astro-cid-j7pv25f6>rich model = 900 lines of boilerplate</span></h2> </div> <span class="gap-problem" data-astro-cid-j7pv25f6>Manual DDD is correct but nobody writes it. Anemic models win not by merit but by price.</span> <div class="contrast" style="margin-top: 20px;" data-astro-cid-j7pv25f6> <div class="contrast-col" data-astro-cid-j7pv25f6> <span class="contrast-label bad" data-astro-cid-j7pv25f6>Manual — 45 lines per entity, never written</span> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>class User {
+  private bio: string;
+  private username: string;
+
+  constructor(props: UserProps) {
+    this.bio  = props.bio;
+    this.username = props.username;
+  }
+
+  updateBio(bio: string) {
+    if (bio.length &gt; 500)
+      throw new Error(&quot;Too long&quot;);
+    this.bio = bio;
+  }
+  updateUsername(name: string) {
+    if (!name) throw new Error();
+    this.username = name;
+  }
+  setBio(v) { this.bio = v; }
+  setUsername(v) { this.username = v; }
+  get props() {
+    return Object.freeze({...this});
+  }
+  equals(o) {
+    return this.id === o.id;
+  }
+  // ×20 entities = 900 lines
+  // Nobody writes this.
+  // They write: interface User {}
+}</code></pre> </div> <div class="contrast-col" data-astro-cid-j7pv25f6> <span class="contrast-label good" data-astro-cid-j7pv25f6>@sotajs/ddd — 3 fields of config</span> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+});
+
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    updateBio(state, bio) {
+      state.bio = bio;
+    },
+    updateUsername(state, n) {
+      state.username = n;
+    },
+  },
+  computed: {
+    displayName(props) {
+      return props.username;
+    },
+  },
+});
+// deepFreeze — automatic
+// equals() — automatic
+// auto-setters — automatic
+// type inference — automatic</code></pre> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <div class="gap-header" data-astro-cid-j7pv25f6> <span class="gap-num" data-astro-cid-j7pv25f6>04</span> <h2 data-astro-cid-j7pv25f6>Culture: <span style="font-weight: 400;" data-astro-cid-j7pv25f6>invariants are optional by default</span></h2> </div> <span class="gap-problem" data-astro-cid-j7pv25f6>Node ecosystem thinks in data transformations. Invariants live in if-statements scattered across services.</span> <div class="row" style="margin-top: 20px;" data-astro-cid-j7pv25f6> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" style="margin-bottom: 16px;" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>without library — invariants are optional</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>// OrderService.ts
+async confirmOrder(orderId) {
+  const order = await db.orders.find(orderId);
+  // Did we check status? Maybe.
+  // Is this check in every service
+  // that touches Order? Probably not.
+  order.status = &#39;confirmed&#39;;
+  await db.orders.save(order);
+}
+
+// RefundService.ts — different file
+async processRefund(orderId) {
+  const order = await db.orders.find(orderId);
+  // Can we refund a pending order?
+  // Same check? Different check?
+  // Six months: who knows.
+}</code></pre> </div> </div> <div class="col" data-astro-cid-j7pv25f6> <div class="chrome" style="margin-bottom: 16px;" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>with @sotajs/ddd — required</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>const Order = createAggregate({
+  name: &#39;Order&#39;,
+  schema: OrderSchema,
+  invariants: [
+    (props) =&gt; {
+      if (props.status === &#39;confirmed&#39;
+        &amp;&amp; props.amountPaid === 0)
+        throw new Error(
+          &#39;Cannot confirm unpaid order&#39;
+        );
+    },
+  ],
+  actions: {
+    confirm(state) {
+      state.status = &#39;confirmed&#39;;
+    },
+  },
+});
+
+// Invariants run on .create()
+Order.create({ status: &#39;confirmed&#39;, amountPaid: 0 });
+// Error: Cannot confirm unpaid order
+
+// AND after every action
+order.actions.confirm();
+// Error: Cannot confirm unpaid order</code></pre> </div> </div> </div> <div class="result" data-astro-cid-j7pv25f6> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Required by TypeScript</h4> <p data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>invariants</code> is not optional on <code data-astro-cid-j7pv25f6>createAggregate</code>. The config won't compile without it. You cannot accidentally ship an aggregate with no rules.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Checked on every action</h4> <p data-astro-cid-j7pv25f6>Invariants run at <code data-astro-cid-j7pv25f6>.create()</code> and after every action. You don't "remember to call validate." The library does it.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Single source of truth</h4> <p data-astro-cid-j7pv25f6>Change one business rule → change it in one place. Every action and every create picks it up automatically.</p> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <p class="label" data-astro-cid-j7pv25f6>The whole picture</p> <h2 data-astro-cid-j7pv25f6>One entity. From declaration to use case.</h2> <p class="sub" style="margin-bottom: 28px;" data-astro-cid-j7pv25f6>
+Your Zod schema. Your actions. Your computed properties. The library handles the rest.
+</p> <div class="row" data-astro-cid-j7pv25f6> <div class="col" data-astro-cid-j7pv25f6> <div class="small-label" data-astro-cid-j7pv25f6>Declaration</div> <div class="chrome" style="margin-bottom: 20px;" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>user-profile.entity.ts</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>import { z } from &#39;zod&#39;;
+import { createEntity } from &#39;@sotajs/ddd&#39;;
+
+const UserProfileSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+});
+type UserProfileProps =
+  z.infer&lt;typeof UserProfileSchema&gt;;
+
+export const UserProfile = createEntity({
+  schema: UserProfileSchema,
+  actions: {
+    updateUsername(state, name) {
+      state.username = name;
+    },
+    updateBio(state, bio) {
+      state.bio = bio;
+    },
+  },
+  computed: {
+    displayName(props) {
+      return props.username;
+    },
+  },
+});
+export type UserProfile =
+  ReturnType&lt;typeof UserProfile.create&gt;;</code></pre> </div> </div> <div class="col" data-astro-cid-j7pv25f6> <div class="small-label" data-astro-cid-j7pv25f6>Usage in a command</div> <div class="chrome" data-astro-cid-j7pv25f6> <div class="chrome-bar" data-astro-cid-j7pv25f6><span class="chrome-dot r" data-astro-cid-j7pv25f6></span><span class="chrome-dot y" data-astro-cid-j7pv25f6></span><span class="chrome-dot g" data-astro-cid-j7pv25f6></span><span class="chrome-fname" data-astro-cid-j7pv25f6>update-profile.command.ts</span></div> <pre class="!border-0 !rounded-none !m-0 !p-5 text-sm" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>// Schema validates on create
+const profile = UserProfile.create({
+  id: &#39;b3f1ae2c-abcd&#39;,
+  username: &#39;alice&#39;,
+});
+
+export const updateProfile = async (
+  userId: string, bio: string,
+) =&gt; {
+  const profile = await profiles
+    .findById(userId);
+
+  profile.actions.updateBio(bio);
+  await profiles.save(profile);
+
+  return {
+    id: profile.id,
+    displayName: profile.displayName,
+  };
+};</code></pre> </div> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <p class="label" data-astro-cid-j7pv25f6>Your stack</p> <h2 data-astro-cid-j7pv25f6>Four functions. Not a framework.</h2> <div class="result" style="margin-top: 20px;" data-astro-cid-j7pv25f6> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>Works inside NestJS — or anything</h4> <p data-astro-cid-j7pv25f6>Your controllers, DI, and modules stay as they are. No decorators, no base classes, no new DI system.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>One module at a time</h4> <p data-astro-cid-j7pv25f6>Replace <code data-astro-cid-j7pv25f6>interface Order</code> with <code data-astro-cid-j7pv25f6>createAggregate</code> in one service. The app doesn't notice. Try on Friday.</p> </div> <div class="result-item" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>No new vocabulary</h4> <p data-astro-cid-j7pv25f6>You already write Zod schemas for DTOs. Actions are functions. Computed are getters. The library removes the boilerplate between them.</p> </div> </div> </section>  <section class="max-w-[960px] mx-auto px-6 py-16 sm:py-20 border-t border-border-muted" data-astro-cid-j7pv25f6> <div class="cta-block" data-astro-cid-j7pv25f6> <pre class="inline-block bg-bg-code border border-border-default rounded-md px-5 py-3 font-mono text-sm mb-4" data-astro-cid-j7pv25f6><code data-astro-cid-j7pv25f6>npm install @sotajs/ddd</code></pre> <p class="text-text-muted text-sm" data-astro-cid-j7pv25f6>TypeScript ^5.0 · Zero dependencies · Works with Zod, ArkType, Valibot · <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-accent hover:underline" data-astro-cid-j7pv25f6>GitHub</a></p> </div> </section>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title> — sotajs/ddd</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="icon" type="image/svg+xml" href="https://sotajs.kaizin.pro/favicon.svg"><link rel="stylesheet" href="/_astro/aggregate.C6ziJ0gJ.css"></head> <body class="min-h-screen flex flex-col"> <nav class="fixed top-0 inset-x-0 z-50 h-14 border-b border-border-muted bg-bg-root/80 backdrop-blur-md"> <div class="max-w-[960px] mx-auto h-full flex items-center justify-between px-6"> <a href="https://sotajs.kaizin.pro/" class="flex items-center gap-2 font-semibold text-text-primary no-underline hover:text-accent transition-colors"> <span class="text-accent font-mono text-lg">◇</span> <span class="tracking-tight">sotajs/ddd</span> </a> <div class="flex items-center gap-6 text-sm"> <a href="/docs/getting-started/" class="text-text-secondary hover:text-text-primary transition-colors">Docs</a> <a href="/docs/api/entity/" class="text-text-secondary hover:text-text-primary transition-colors">API</a> <a href="https://github.com/kaizin-lab/sotajs-ddd" class="text-text-secondary hover:text-text-primary transition-colors" target="_blank">GitHub</a> </div> </div> </nav> <main class="flex-1 pt-14">  <div class="max-w-[960px] mx-auto px-6 py-10"> <div class="flex gap-10"> <aside class="hidden lg:block w-48 shrink-0"> <nav class="sticky top-20 space-y-1 text-sm"> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Getting Started</div> <a href="/docs/getting-started/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Introduction</a> <a href="/docs/getting-started/#install" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Installation</a> <a href="/docs/getting-started/#why" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Why sotajs/ddd</a> <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mt-4 mb-2">API Reference</div> <a href="/docs/api/entity/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Entity</a> <a href="/docs/api/aggregate/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Aggregate</a> <a href="/docs/api/value-object/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">Value Object</a> <a href="/docs/api/branded-id/" class="block py-1 text-text-secondary hover:text-text-primary transition-colors">BrandedId</a> </nav> </aside> <article class="min-w-0 flex-1 prose-a:text-accent"> <h2 id="createbrandedidconfig"><code>createBrandedId(config)</code></h2>
+<p>Creates a <strong>BrandedId</strong> class — a typed wrapper around a string ID that prevents
+accidentally mixing up different ID types. <code>UserId</code> and <code>ProductId</code> are incompatible
+at compile time, even though both wrap strings.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { z } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;zod&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { createBrandedId } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> &#39;@sotajs/ddd&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  brand: </span><span style="color:#9ECBFF">&#39;UserId&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> UserId.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ProductId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  brand: </span><span style="color:#9ECBFF">&#39;ProductId&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  schema: z.</span><span style="color:#B392F0">string</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">uuid</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> ProductId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> ReturnType</span><span style="color:#E1E4E8">&lt;</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> ProductId.create&gt;;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Compile-time safety:</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> assignToUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">) {}</span></span>
+<span class="line"><span style="color:#B392F0">assignToUser</span><span style="color:#E1E4E8">(productIdInstance); </span><span style="color:#6A737D">// TypeScript error</span></span></code></pre>
+<hr/>
+<h2 id="config">Config</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>brand</code></td><td><strong>Yes</strong></td><td>Unique string literal. Used for TypeScript branding.</td></tr><tr><td><code>schema</code></td><td>No*</td><td>Zod/Valibot schema for the string value.</td></tr><tr><td><code>type</code></td><td>No*</td><td>ArkType type.</td></tr><tr><td><code>validate</code></td><td>No*</td><td>Generic <code>(value: string) =&gt; string</code>. Can sanitize.</td></tr></tbody></table>
+<blockquote>
+<p>*One of <code>schema</code>, <code>type</code>, or <code>validate</code> is required.</p>
+</blockquote>
+<hr/>
+<h2 id="instance-api">Instance API</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Member</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>BrandedId.create(value)</code></td><td>BrandedId instance</td><td>Validates and returns instance.</td></tr><tr><td><code>id.value</code></td><td><code>string &amp; { __brand }</code></td><td>The branded string.</td></tr><tr><td><code>id.equals(other)</code></td><td><code>boolean</code></td><td>Value comparison.</td></tr><tr><td><code>id.toString()</code></td><td><code>string</code></td><td>Returns the raw string.</td></tr><tr><td><code>id.toJSON()</code></td><td><code>string</code></td><td>JSON serialization — returns the string.</td></tr></tbody></table>
+<hr/>
+<h2 id="why-this-exists">Why this exists</h2>
+<p>TypeScript is structurally typed. Without branded IDs:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> UserId</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> ProductId</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> string</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getUser</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UserId</span><span style="color:#E1E4E8">) {}</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> getProduct</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#F97583">:</span><span style="color:#B392F0"> ProductId</span><span style="color:#E1E4E8">) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> productId</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &#39;abc-123&#39;</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#B392F0">getUser</span><span style="color:#E1E4E8">(productId); </span><span style="color:#6A737D">// compiles — wrong ID passed</span></span></code></pre>
+<p>With branded IDs, the compiler catches the mistake. At runtime, validation
+still applies — schema or validate function runs on every <code>.create()</code>.</p>
+<blockquote>
+<p><code>toJSON()</code> and <code>toString()</code> return the plain string — serialization is transparent.
+You can store branded IDs in JSON, pass them to APIs, use them as route params.
+Deserialize through <code>.create()</code> to get validation back.</p>
+</blockquote>
+<hr/>
+<h2 id="validation--sanitization">Validation + sanitization</h2>
+<p>The validator can also sanitize:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> TrimmedId</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createBrandedId</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  brand: </span><span style="color:#9ECBFF">&#39;Trimmed&#39;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#B392F0">  validate</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">v</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=&gt;</span><span style="color:#E1E4E8"> v.</span><span style="color:#B392F0">trim</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">toLowerCase</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> id</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> TrimmedId.</span><span style="color:#B392F0">create</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&#39;  HELLO  &#39;</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">id.value; </span><span style="color:#6A737D">// &#39;hello&#39;</span></span></code></pre>
+<hr/>
+<h2 id="pitfalls">Pitfalls</h2>
+<ul>
+<li><strong>Brand is compile-time only.</strong> At runtime, the value is a plain string.</li>
+<li><strong>Schema must validate a string.</strong> <code>z.string().uuid()</code> works. <code>z.object({...})</code> does not.</li>
+<li><strong>TypeScript-only safety.</strong> JavaScript consumers can still mix up IDs, but runtime validation applies.</li>
+</ul> </article> </div> </div>  </main> <footer class="border-t border-border-muted py-8 mt-16"> <div class="max-w-[960px] mx-auto px-6 text-sm text-text-muted flex flex-col sm:flex-row justify-between gap-2"> <span>sotajs/ddd — domain enforcement for TypeScript</span> <span>MIT License</span> </div> </footer> </body></html>
