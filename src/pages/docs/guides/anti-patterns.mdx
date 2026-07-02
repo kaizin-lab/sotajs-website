@@ -1,0 +1,252 @@
+---
+title: "Anti-patterns"
+description: "Common mistakes when using @sotajs/ddd — and how to avoid them"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+These are patterns we've seen (and written ourselves). Each one looks reasonable
+at first glance but undermines what the library gives you.
+
+---
+
+## Trivial actions — wrapping auto-setters
+
+❌ **Bad:**
+
+```ts
+actions: {
+  updateBio(state, bio: string) { state.bio = bio; },
+  setName(state, name: string) { state.name = name; },
+  setEmail(state, email: string) { state.email = email; },
+}
+```
+
+✅ **Good:**
+
+```ts
+// Don't write these. Auto-setters already exist:
+user.actions.setBio('new bio');
+user.actions.setName('alice');
+user.actions.setEmail('a@test.com');
+```
+
+> Every Zod field gets a typed `setField()` auto-generated.
+> Only write actions for operations with business logic.
+
+---
+
+## Zod inside the validate callback
+
+❌ **Bad:**
+
+```ts
+createEntity({
+  validate: (data) =>
+    z.object({
+      id: z.string(),
+      name: z.string(),
+    }).parse(data),
+  actions: { ... },
+})
+```
+
+✅ **Good:**
+
+```ts
+const schema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+createEntity({
+  schema,  // ← direct, shorter, gives auto-setters
+  actions: { ... },
+})
+```
+
+> Using `schema` directly gives you type inference AND auto-setters from `schema.shape`.
+> Using `validate` wrapper loses auto-setters and type inference from the schema.
+
+---
+
+## Skipping invariants on Aggregate
+
+❌ **Bad:**
+
+```ts
+createAggregate({
+  name: 'Order',
+  schema: OrderSchema,
+  // invariants: [] ← empty or missing
+  actions: { ... },
+})
+```
+
+This won't compile — `invariants` is required. But the temptation is to write:
+
+```ts
+invariants: [], // empty array — compiles but gives no protection
+```
+
+✅ **Good:**
+
+```ts
+invariants: [
+  (props) => {
+    if (props.items.length === 0)
+      throw new Error('Must have at least one item');
+  },
+],
+```
+
+> If you have no invariants, you don't need an Aggregate. Use `createEntity` instead.
+> An empty `invariants` array is a code smell — it means "I wanted Aggregate features
+> without Aggregate responsibility."
+
+---
+
+## Business logic in the repository
+
+❌ **Bad:**
+
+```ts
+async function createOrder(data: unknown) {
+  const order = Order.create(data);
+  // Business logic in the repository:
+  if (order.props.total > 10000) {
+    await notificationService.sendLargeOrderAlert(order);
+  }
+  await db.orders.save(order.props);
+}
+```
+
+✅ **Good:**
+
+```ts
+// Repository: persistence only
+async function saveOrder(order: Order) {
+  await db.orders.upsert({
+    where: { id: order.id },
+    create: order.props,
+    update: order.props,
+  });
+}
+
+// Use case: business logic
+async function createOrderCommand(data: unknown) {
+  const order = Order.create(data);
+  await saveOrder(order);
+  if (order.props.total > 10000) {
+    await notificationService.sendLargeOrderAlert(order);
+  }
+}
+```
+
+> Repository = persistence. Use case = orchestration + business logic.
+> Keeping them separate makes both testable in isolation.
+
+---
+
+## State objects instead of entities
+
+❌ **Bad:**
+
+```ts
+// Anemic: state is a plain object, logic lives elsewhere
+interface OrderState {
+  id: string;
+  items: OrderItem[];
+  status: string;
+}
+
+// Logic scattered across services:
+class OrderService {
+  addItem(order: OrderState, item: OrderItem) {
+    if (order.status !== 'pending') throw ...;
+    order.items.push(item);
+  }
+  ship(order: OrderState) {
+    if (order.items.length === 0) throw ...;
+    order.status = 'shipped';
+  }
+}
+```
+
+✅ **Good:**
+
+```ts
+// Rich: state and behavior in one place
+const Order = createAggregate({
+  // ... schema, invariants, actions
+});
+
+// Use case: just orchestration
+order.actions.addItem(item);
+order.actions.ship();
+```
+
+> The library doesn't add new concepts — it removes the friction of doing it right.
+> An anemic model is cheaper in the moment. The library makes rich models cheaper.
+
+---
+
+## Ignoring domain events
+
+❌ **Bad:**
+
+```ts
+actions: {
+  ship(state) {
+    state.status = 'shipped';
+    // No event returned — consumer doesn't know this happened
+  },
+}
+```
+
+✅ **Good:**
+
+```ts
+actions: {
+  ship(state) {
+    state.status = 'shipped';
+    return { event: { aggregateId: state.id, timestamp: new Date() } };
+  },
+}
+
+// After the use case:
+const events = order.getPendingEvents();
+// Dispatch to email service, analytics, audit log, etc.
+```
+
+> Events are pull-based. If you don't return them, they don't exist.
+> If you don't pull them, nothing happens. It's explicit and testable.
+
+---
+
+## Validating what Zod already validates
+
+❌ **Bad:**
+
+```ts
+const schema = z.object({ email: z.string().email() });
+
+actions: {
+  setEmail(state, email: string) {
+    if (!email.includes('@')) throw new Error('Invalid email');
+    state.email = email;
+  },
+}
+```
+
+✅ **Good:**
+
+```ts
+const schema = z.object({ email: z.string().email() });
+
+// Zod validates on .create(). Auto-setter handles assignment:
+user.actions.setEmail('a@test.com');
+```
+
+> Zod validation runs on `.create()`. Auto-setters bypass schema re-validation.
+> If you need re-validation on every set (e.g., you changed the schema after creation),
+> write an action that calls `schema.parse()` — but that's rare.

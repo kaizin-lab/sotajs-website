@@ -1,0 +1,173 @@
+---
+title: "Creating Entities"
+description: "From Zod schema to rich domain entity — with actions, auto-setters, and computed properties"
+layout: ../../../layouts/DocsLayout.astro
+---
+
+An Entity is an object with identity. It has an `id`, mutable state changed only through defined actions,
+and computed (derived) properties. This guide walks through creating one from scratch.
+
+## 1. Start with a Zod schema
+
+You already write Zod schemas for API validation. That's your starting point:
+
+```ts
+import { z } from 'zod';
+
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+  emailVerified: z.boolean().default(false),
+});
+type UserProps = z.infer<typeof UserSchema>;
+```
+
+## 2. Wrap it in createEntity
+
+```ts
+import { createEntity } from '@sotajs/ddd';
+
+const User = createEntity({
+  schema: UserSchema,
+  actions: {},
+});
+type User = ReturnType<typeof User.create>;
+```
+
+That's a valid entity. It has identity, frozen props, equals — but no custom behavior yet.
+You already get auto-setters for every non-`id` field:
+
+```ts
+const user = User.create({ id: '...', username: 'alice' });
+user.actions.setUsername('alicia');  // auto-generated
+user.actions.setBio('new bio');       // auto-generated
+user.props.username; // 'alicia'
+```
+
+## 3. Add actions — for business logic, not setters
+
+Auto-setters handle simple field assignment. **Actions are for operations that carry business meaning.**
+
+❌ **Bad — trivial setter disguised as action:**
+
+```ts
+actions: {
+  updateBio(state, bio: string) {
+    state.bio = bio; // auto-setter already does this
+  },
+}
+```
+
+✅ **Good — action with business logic:**
+
+```ts
+actions: {
+  verifyEmail(state) {
+    if (state.emailVerified) throw new Error('Already verified');
+    state.emailVerified = true;
+  },
+  deactivate(state) {
+    if (state.emailVerified) throw new Error('Must verify email first');
+    state.status = 'inactive';
+  },
+}
+```
+
+> Rule: if your action body is a single assignment, delete it — an auto-setter already exists.
+> Actions earn their place through validation, conditional logic, or multi-field changes.
+
+## 4. Add computed — derived values as properties
+
+```ts
+computed: {
+  displayName(props) {
+    return props.username;
+  },
+  isVerified(props) {
+    return props.emailVerified;
+  },
+  initials(props) {
+    return props.username.slice(0, 2).toUpperCase();
+  },
+}
+```
+
+Usage:
+
+```ts
+const user = User.create({ id: '...', username: 'alice' });
+user.displayName; // 'alice' — property, not function call
+user.isVerified;  // false
+user.initials;    // 'AL'
+```
+
+> Computed values recalculate from current props on every access. Keep them fast —
+> no I/O, no async, no heavy computation. If you need caching, do it at the use case level.
+
+## 5. The full entity
+
+```ts
+import { z } from 'zod';
+import { createEntity } from '@sotajs/ddd';
+
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  bio: z.string().optional(),
+  emailVerified: z.boolean().default(false),
+  status: z.enum(['active', 'inactive']).default('active'),
+});
+type UserProps = z.infer<typeof UserSchema>;
+
+const User = createEntity({
+  schema: UserSchema,
+  actions: {
+    verifyEmail(state) {
+      if (state.emailVerified) throw new Error('Already verified');
+      state.emailVerified = true;
+    },
+    deactivate(state) {
+      if (!state.emailVerified) throw new Error('Must verify email first');
+      state.status = 'inactive';
+    },
+    reactivate(state) {
+      if (state.status !== 'inactive') throw new Error('Not inactive');
+      state.status = 'active';
+    },
+  },
+  computed: {
+    displayName(props) { return props.username; },
+    isVerified(props) { return props.emailVerified; },
+  },
+});
+type User = ReturnType<typeof User.create>;
+```
+
+## 6. Use it
+
+```ts
+const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice' });
+
+// Auto-setters for simple fields
+user.actions.setBio('TypeScript enthusiast');
+
+// Actions for business operations
+user.actions.verifyEmail();
+user.actions.deactivate();
+
+// Read state
+user.props.status;      // 'inactive'
+user.displayName;       // 'alice'
+user.isVerified;        // true
+
+// Identity comparison
+const same = User.create({ id: 'b3f1ae2c-abcd', username: 'bob' });
+user.equals(same); // true — same id
+```
+
+## Next
+
+- [Actions vs Auto-setters](/docs/guides/actions-vs-setters/) — when to use which
+- [Building Aggregates](/docs/guides/aggregates/) — invariants, nested entities, events
+- [Entity API reference](/docs/api/entity/) — full config reference

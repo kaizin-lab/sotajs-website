@@ -17,12 +17,16 @@ const UserSchema = z.object({
   id: z.string().uuid(),
   username: z.string(),
   bio: z.string().optional(),
+  emailVerified: z.boolean().default(false),
 });
 
 const User = createEntity({
   schema: UserSchema,
   actions: {
-    updateBio(state, bio: string) { state.bio = bio; },
+    verifyEmail(state) {
+      if (state.emailVerified) throw new Error('Already verified');
+      state.emailVerified = true;
+    },
   },
   computed: {
     displayName(props) { return props.username; },
@@ -31,7 +35,7 @@ const User = createEntity({
 type User = ReturnType<typeof User.create>;
 
 const user = User.create({ id: 'b3f1ae2c-abcd', username: 'alice' });
-user.actions.updateBio('new bio');
+user.actions.verifyEmail();
 console.log(user.displayName); // 'alice'
 ```
 
@@ -80,8 +84,9 @@ When you call an action, the library:
 
 ```ts
 // Your action
-updateBio(state, bio: string) {
-  state.bio = bio; // mutating a draft copy
+verifyEmail(state) {
+  if (state.emailVerified) throw new Error('Already verified');
+  state.emailVerified = true; // mutating a draft copy
 }
 // The library swaps the draft in — atomic from your perspective
 ```
